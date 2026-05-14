@@ -1,11 +1,115 @@
-import React from 'react';
-import { ArrowLeft, Save, Plus, Search } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+
+export interface OrderLineItem {
+  inventoryId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+export interface OrderData {
+  customer: string;
+  date: string;
+  items: number; // Total quantity
+  total: number; // Final total
+  status: 'Pending' | 'Processing' | 'Delivered';
+  lineItems: OrderLineItem[];
+  deliveryFee: number;
+}
 
 interface AddOrderProps {
   onBack: () => void;
+  onSave: (order: OrderData) => void;
+  inventory: any[]; // The InventoryItem[] from page.tsx
+  customers: any[]; // The customer list
 }
 
-export default function AddOrder({ onBack }: AddOrderProps) {
+export default function AddOrder({ onBack, onSave, inventory, customers }: AddOrderProps) {
+  const [formData, setFormData] = useState<OrderData>({
+    customer: '',
+    date: new Date().toISOString().split('T')[0],
+    items: 0,
+    total: 0,
+    status: 'Pending',
+    lineItems: [],
+    deliveryFee: 15000
+  });
+
+  const handleAddLineItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      lineItems: [
+        ...prev.lineItems,
+        { inventoryId: '', name: '', quantity: 1, price: 0, total: 0 }
+      ]
+    }));
+  };
+
+  const handleRemoveLineItem = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      lineItems: prev.lineItems.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleLineItemChange = (index: number, field: string, value: string | number) => {
+    const newItems = [...formData.lineItems];
+    const item = newItems[index];
+
+    if (field === 'inventoryId') {
+      const invItem = inventory.find(i => i.id === value);
+      item.inventoryId = value as string;
+      if (invItem) {
+        item.name = `${invItem.design} ${invItem.panelType} Panel ${invItem.size ? `(${invItem.size})` : ''}`;
+        item.price = invItem.price;
+      }
+    } else if (field === 'quantity') {
+      item.quantity = Number(value);
+    } else if (field === 'price') {
+      item.price = Number(value);
+    }
+
+    item.total = item.quantity * item.price;
+    newItems[index] = item;
+    
+    setFormData(prev => ({ ...prev, lineItems: newItems }));
+  };
+
+  const calculateSubtotal = () => {
+    return formData.lineItems.reduce((acc, item) => acc + item.total, 0);
+  };
+
+  const calculateTotalQty = () => {
+    return formData.lineItems.reduce((acc, item) => acc + item.quantity, 0);
+  };
+
+  const handleSave = () => {
+    if (!formData.customer) {
+      alert("Please select a customer.");
+      return;
+    }
+    if (formData.lineItems.length === 0 || !formData.lineItems[0].inventoryId) {
+      alert("Please add at least one valid item to the order.");
+      return;
+    }
+
+    const subtotal = calculateSubtotal();
+    const finalData: OrderData = {
+      ...formData,
+      items: calculateTotalQty(),
+      total: subtotal + formData.deliveryFee
+    };
+
+    onSave(finalData);
+  };
+
+  const subtotal = calculateSubtotal();
+  const finalTotal = subtotal + formData.deliveryFee;
+
+  const formatLKR = (amount: number) => `LKR ${amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
@@ -21,7 +125,7 @@ export default function AddOrder({ onBack }: AddOrderProps) {
             <p className="text-zinc-400 text-sm">Draft a new sales order for a customer</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-all shadow-lg shadow-indigo-500/20">
+        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-all shadow-lg shadow-indigo-500/20">
           <Save className="w-4 h-4" /> Save Order
         </button>
       </div>
@@ -36,16 +140,22 @@ export default function AddOrder({ onBack }: AddOrderProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-zinc-400">Customer</label>
-                <select className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all appearance-none">
-                  <option value="">Select a Customer...</option>
-                  <option value="1">BuildTech Constructions</option>
-                  <option value="2">Skyline Developers</option>
-                  <option value="3">GreenEco Builders</option>
-                </select>
+                <input 
+                  type="text"
+                  placeholder="Enter customer name..."
+                  value={formData.customer}
+                  onChange={(e) => setFormData({...formData, customer: e.target.value})}
+                  className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all"
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-zinc-400">Order Date</label>
-                <input type="date" className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all [color-scheme:dark]" />
+                <input 
+                  type="date" 
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all [color-scheme:dark]" 
+                />
               </div>
             </div>
           </div>
@@ -53,53 +163,64 @@ export default function AddOrder({ onBack }: AddOrderProps) {
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
             <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
               <h3 className="text-lg font-medium">Order Items</h3>
-              <button className="flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300">
-                <Plus className="w-4 h-4" /> Add Panel
+              <button onClick={handleAddLineItem} className="flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300">
+                <Plus className="w-4 h-4" /> Add Item
               </button>
             </div>
             
             <div className="space-y-4">
-              {/* Item Row 1 */}
-              <div className="flex items-end gap-4">
-                <div className="flex-1 space-y-2">
-                  <label className="text-sm text-zinc-500">Panel</label>
-                  <select className="w-full px-4 py-2 bg-[#0a0a0b] border border-white/10 rounded-lg text-sm text-white">
-                    <option>PU Wall Sandwich Panel (50mm)</option>
-                    <option>EPS Roof Sandwich Panel (75mm)</option>
-                  </select>
+              {formData.lineItems.length === 0 && (
+                <div className="text-center py-8 text-zinc-500 text-sm">
+                  No items added yet. Click "Add Item" to start.
                 </div>
-                <div className="w-24 space-y-2">
-                  <label className="text-sm text-zinc-500">Qty (sqm)</label>
-                  <input type="number" defaultValue="50" className="w-full px-4 py-2 bg-[#0a0a0b] border border-white/10 rounded-lg text-sm text-white text-right" />
+              )}
+              {formData.lineItems.map((item, index) => (
+                <div key={index} className="flex items-end gap-4 p-3 bg-white/5 rounded-xl border border-white/5 relative group">
+                  <div className="flex-1 space-y-2">
+                    <label className="text-xs text-zinc-500">Panel</label>
+                    <select 
+                      value={item.inventoryId}
+                      onChange={(e) => handleLineItemChange(index, 'inventoryId', e.target.value)}
+                      className="w-full px-3 py-2 bg-[#0a0a0b] border border-white/10 rounded-lg text-sm text-white"
+                    >
+                      <option value="">Select Panel...</option>
+                      {inventory.map((inv: any) => (
+                        <option key={inv.id} value={inv.id}>
+                          {inv.design} {inv.panelType} {inv.size ? `(${inv.size})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-20 space-y-2">
+                    <label className="text-xs text-zinc-500">Qty</label>
+                    <input 
+                      type="number" 
+                      value={item.quantity || ''}
+                      onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
+                      className="w-full px-3 py-2 bg-[#0a0a0b] border border-white/10 rounded-lg text-sm text-white text-right" 
+                    />
+                  </div>
+                  <div className="w-28 space-y-2">
+                    <label className="text-xs text-zinc-500">Price/Sqft</label>
+                    <input 
+                      type="number" 
+                      value={item.price || ''}
+                      onChange={(e) => handleLineItemChange(index, 'price', e.target.value)}
+                      className="w-full px-3 py-2 bg-[#0a0a0b] border border-white/10 rounded-lg text-sm text-zinc-300 text-right" 
+                    />
+                  </div>
+                  <div className="w-32 space-y-2">
+                    <label className="text-xs text-zinc-500">Total (LKR)</label>
+                    <input type="text" readOnly value={item.total.toLocaleString()} className="w-full px-3 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-sm text-indigo-400 font-medium text-right" />
+                  </div>
+                  <button 
+                    onClick={() => handleRemoveLineItem(index)}
+                    className="absolute -right-2 -top-2 p-1.5 bg-rose-500/10 text-rose-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500/20"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 </div>
-                <div className="w-32 space-y-2">
-                  <label className="text-sm text-zinc-500">Price/sqm</label>
-                  <input type="text" readOnly value="7,650.00" className="w-full px-4 py-2 bg-[#0a0a0b]/50 border border-white/10 rounded-lg text-sm text-zinc-400 text-right" />
-                </div>
-                <div className="w-32 space-y-2">
-                  <label className="text-sm text-zinc-500">Total (LKR)</label>
-                  <input type="text" readOnly value="382,500.00" className="w-full px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-sm text-indigo-400 font-medium text-right" />
-                </div>
-              </div>
-
-              {/* Item Row 2 */}
-              <div className="flex items-end gap-4">
-                <div className="flex-1 space-y-2">
-                  <select className="w-full px-4 py-2 bg-[#0a0a0b] border border-white/10 rounded-lg text-sm text-white">
-                    <option>EPS Roof Sandwich Panel (75mm)</option>
-                    <option>PU Wall Sandwich Panel (50mm)</option>
-                  </select>
-                </div>
-                <div className="w-24 space-y-2">
-                  <input type="number" defaultValue="20" className="w-full px-4 py-2 bg-[#0a0a0b] border border-white/10 rounded-lg text-sm text-white text-right" />
-                </div>
-                <div className="w-32 space-y-2">
-                  <input type="text" readOnly value="5,625.00" className="w-full px-4 py-2 bg-[#0a0a0b]/50 border border-white/10 rounded-lg text-sm text-zinc-400 text-right" />
-                </div>
-                <div className="w-32 space-y-2">
-                  <input type="text" readOnly value="112,500.00" className="w-full px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-sm text-indigo-400 font-medium text-right" />
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -111,29 +232,41 @@ export default function AddOrder({ onBack }: AddOrderProps) {
           <div className="space-y-3 mb-6">
             <div className="flex justify-between text-zinc-400 text-sm">
               <span>Subtotal</span>
-              <span>LKR 495,000.00</span>
+              <span>{formatLKR(subtotal)}</span>
             </div>
             <div className="flex justify-between text-zinc-400 text-sm">
               <span>Tax (0%)</span>
               <span>LKR 0.00</span>
             </div>
-            <div className="flex justify-between text-zinc-400 text-sm">
+            <div className="flex justify-between text-zinc-400 text-sm items-center">
               <span>Delivery</span>
-              <span>LKR 15,000.00</span>
+              <div className="flex items-center gap-1 w-24">
+                <span className="text-xs">Rs.</span>
+                <input 
+                  type="number" 
+                  value={formData.deliveryFee || ''}
+                  onChange={(e) => setFormData({...formData, deliveryFee: Number(e.target.value)})}
+                  className="w-full px-2 py-1 bg-[#0a0a0b] border border-white/10 rounded text-right text-sm"
+                />
+              </div>
             </div>
           </div>
 
           <div className="border-t border-white/10 pt-4 flex justify-between items-center">
             <span className="font-medium text-white">Total</span>
-            <span className="text-2xl font-bold text-indigo-400">LKR 510,000.00</span>
+            <span className="text-2xl font-bold text-indigo-400">{formatLKR(finalTotal)}</span>
           </div>
 
           <div className="mt-8 space-y-2">
             <label className="text-sm font-medium text-zinc-400">Status</label>
-            <select className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all appearance-none">
-              <option value="pending">Pending</option>
-              <option value="processing">Processing</option>
-              <option value="delivered">Delivered</option>
+            <select 
+              value={formData.status}
+              onChange={(e) => setFormData({...formData, status: e.target.value as any})}
+              className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all appearance-none"
+            >
+              <option value="Pending">Pending</option>
+              <option value="Processing">Processing</option>
+              <option value="Delivered">Delivered</option>
             </select>
           </div>
         </div>
