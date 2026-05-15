@@ -148,45 +148,45 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white"
+            className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <h2 className="text-2xl font-bold">{initialData ? 'Edit Panel' : 'Add New Panel'}</h2>
-            <p className="text-zinc-400 text-sm">{initialData ? 'Update panel details and stock' : 'Add a new sandwich panel to your inventory'}</p>
+            <p className="text-gray-400 text-sm">{initialData ? 'Update panel details and stock' : 'Add a new sandwich panel to your inventory'}</p>
           </div>
         </div>
         <button
           onClick={handleSave}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-all shadow-lg shadow-indigo-500/20"
+          className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-white font-medium transition-all shadow-lg shadow-[#E8973A]/20"
         >
           <Save className="w-4 h-4" /> Save Panel
         </button>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
+      <div className="bg-gray-800 border border-gray-800 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b border-white/10 pb-2">Basic Information</h3>
+            <h3 className="text-lg font-medium border-b border-gray-800 pb-2">Basic Information</h3>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400">Panel ID</label>
+              <label className="text-sm font-medium text-gray-400">Panel ID</label>
               <input
                 type="text"
                 readOnly
                 value={formData.panelId}
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl focus:outline-none text-zinc-400 transition-all cursor-not-allowed"
+                className="w-full px-4 py-2.5 bg-gray-800 border border-gray-800 rounded-xl focus:outline-none text-gray-400 transition-all cursor-not-allowed"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400">Panel Type</label>
+              <label className="text-sm font-medium text-gray-400">Panel Type</label>
               <select
                 value={formData.panelType}
                 onChange={handlePanelTypeChange}
-                className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all appearance-none"
+                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
               >
                 <option value="Wall">Wall</option>
                 <option value="Roofing">Roofing</option>
@@ -196,11 +196,11 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400">Design</label>
+              <label className="text-sm font-medium text-gray-400">Design</label>
               <select
                 value={formData.design}
                 onChange={(e) => setFormData({ ...formData, design: e.target.value })}
-                className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all appearance-none"
+                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
               >
                 {availableDesigns.map(design => (
                   <option key={design} value={design}>{design}</option>
@@ -209,26 +209,26 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400">Color</label>
+              <label className="text-sm font-medium text-gray-400">Color</label>
               <input
                 type="text"
                 placeholder="e.g. White, Grey"
                 value={formData.color}
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all"
+                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all"
               />
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b border-white/10 pb-2">Pricing & Stock</h3>
+            <h3 className="text-lg font-medium border-b border-gray-800 pb-2">Pricing & Stock</h3>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400">Size / Specifications</label>
+              <label className="text-sm font-medium text-gray-400">Size / Specifications</label>
               <select
                 value={formData.size}
                 onChange={handleSizeChange}
-                className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all appearance-none"
+                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
               >
                 {currentSizeOptions.map(opt => (
                   <option key={opt.label} value={opt.label}>{opt.label}</option>
@@ -237,28 +237,28 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400">Price (LKR)</label>
+              <label className="text-sm font-medium text-gray-400">Price (LKR)</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">Rs.</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">Rs.</span>
                 <input
                   type="number"
                   placeholder="0.00"
                   value={formData.price || ''}
                   onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                  className="w-full pl-12 pr-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all"
+                  className="w-full pl-12 pr-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all"
                 />
               </div>
               {formData.size && formData.size.includes('Custom') && (
-                <p className="text-xs text-amber-500/80 mt-1">
+                <p className="text-xs text-gray-500/80 mt-1">
                   You selected Custom Size. Please manually enter the final calculated price based on the Sqft rate.
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400">Initial Quantity</label>
+              <label className="text-sm font-medium text-gray-400">Initial Quantity</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
                   <Box className="w-4 h-4" />
                 </span>
                 <input
@@ -266,17 +266,17 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
                   placeholder="0"
                   value={formData.quantity || ''}
                   onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                  className="w-full pl-12 pr-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all"
+                  className="w-full pl-12 pr-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400">Status</label>
+              <label className="text-sm font-medium text-gray-400">Status</label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                className="w-full px-4 py-2.5 bg-[#0a0a0b] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white transition-all appearance-none"
+                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
               >
                 <option value="In Stock">In Stock</option>
                 <option value="Low Stock">Low Stock</option>
