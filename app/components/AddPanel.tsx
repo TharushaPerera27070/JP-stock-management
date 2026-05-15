@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Box } from 'lucide-react';
+import React, { useState } from 'react';
+import Papa from 'papaparse';
+import { ArrowLeft, Save, Box, Upload, FileText, X, CheckCircle2, AlertCircle, Loader2, Download, Trash2 } from 'lucide-react';
 
 export interface PanelData {
   panelId: string;
@@ -10,11 +11,14 @@ export interface PanelData {
   price: number;
   quantity: number;
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  imageUrl?: string;
+  importDetails?: string;
 }
 
 interface AddPanelProps {
   onBack: () => void;
-  onSave: (panel: PanelData) => void;
+  onSave: (panel: PanelData, silent?: boolean) => Promise<void>;
+  onDelete?: () => Promise<void>;
   initialData?: PanelData;
 }
 
@@ -24,7 +28,7 @@ const roofingDesigns = ["Corrugated", "Sirius"];
 const pricingOptions: Record<string, { label: string, price: number }[]> = {
   'Wall': [
     { label: '10ft (120 inch) x 17" width', price: 15230 },
-    { label: '12 1/2 ft (150 inch) x 17" width', price: 18900 },
+    { label: '12 1/2 ft (150 inch) x 17" width', price: 19050 },
     { label: '13ft (156 inch) x 17" width', price: 19800 },
     { label: '10ft (120 inch) x 16" width', price: 14350 },
     { label: '12 1/2 ft (150 inch) x 16" width', price: 17900 },
@@ -47,7 +51,7 @@ const pricingOptions: Record<string, { label: string, price: number }[]> = {
     { label: '10ft x 12" width', price: 10750 },
     { label: '10ft x 17" width', price: 15230 },
     { label: '12ft x 17" width', price: 18275 },
-    { label: '12 1/2 ft (150 inch) x 17" width', price: 18900 },
+    { label: '12 1/2 ft (150 inch) x 17" width', price: 19050 },
     { label: '13ft x 17" width', price: 19800 },
     { label: '10ft (120 inch) x 16" width', price: 14350 },
     { label: '12 1/2 ft (150 inch) x 16" width', price: 17900 },
@@ -64,7 +68,7 @@ const pricingOptions: Record<string, { label: string, price: number }[]> = {
   ]
 };
 
-export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps) {
+export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddPanelProps) {
   const [formData, setFormData] = useState<PanelData>(initialData || {
     panelId: 'WAL-NARO-XXX',
     panelType: 'Wall',
@@ -73,31 +77,40 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
     size: pricingOptions['Wall'][0].label,
     price: pricingOptions['Wall'][0].price,
     quantity: 0,
-    status: 'In Stock'
+    status: 'In Stock',
+    imageUrl: '',
+    importDetails: ''
   });
 
-  useEffect(() => {
-    let typePrefix = formData.panelType.substring(0, 3).toUpperCase();
-    if (formData.panelType === 'Wall/ Ceiling') {
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importResults, setImportResults] = useState<{ success: number; failed: number } | null>(null);
+
+  const generatePanelId = (panel: Partial<PanelData>) => {
+    let typePrefix = (panel.panelType || 'WAL').substring(0, 3).toUpperCase();
+    if (panel.panelType === 'Wall/ Ceiling') {
       typePrefix = 'WNC';
     }
-    const designPrefix = formData.design.substring(0, 4).toUpperCase();
-    const colorPrefix = formData.color ? formData.color.substring(0, 3).toUpperCase() : 'XXX';
+    const designPrefix = (panel.design || 'XXXX').substring(0, 4).toUpperCase();
+    const colorPrefix = panel.color ? panel.color.substring(0, 3).toUpperCase() : 'XXX';
 
-    // Add a size hint to the ID to distinguish identical colors but different lengths
     let sizeSuffix = '';
-    if (formData.size && !formData.size.includes('Custom')) {
-      const match = formData.size.match(/^(\d+(?: 1\/2)?|\d+\.\d+)ft/);
+    if (panel.size && !panel.size.includes('Custom')) {
+      const match = panel.size.match(/^(\d+(?: 1\/2)?|\d+\.\d+)ft/);
       if (match) {
         sizeSuffix = '-' + match[1].replace(' 1/2', '.5') + 'FT';
       }
     }
 
-    setFormData(prev => ({
-      ...prev,
-      panelId: `${typePrefix}-${designPrefix}-${colorPrefix}${sizeSuffix}`
-    }));
-  }, [formData.panelType, formData.design, formData.color, formData.size]);
+    return `${typePrefix}-${designPrefix}-${colorPrefix}${sizeSuffix}`;
+  };
+
+  // Update the panelId whenever relevant fields change
+  const updatePanelId = (newData: Partial<PanelData>) => {
+    const combined = { ...formData, ...newData };
+    const newId = generatePanelId(combined);
+    setFormData(prev => ({ ...prev, ...newData, panelId: newId }));
+  };
 
   const handleSave = () => {
     if (!formData.panelId) {
@@ -108,7 +121,12 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
       alert('Please select a specification or custom size.');
       return;
     }
-    onSave(formData);
+    onSave({
+      ...formData,
+      color: formData.color.trim(),
+      imageUrl: formData.imageUrl?.trim(),
+      importDetails: formData.importDetails?.trim()
+    });
   };
 
   const handlePanelTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -118,8 +136,7 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
     const newSize = newSizeOptions[0].label;
     const newPrice = newSizeOptions[0].price;
 
-    setFormData({
-      ...formData,
+    updatePanelId({
       panelType: newType,
       design: newDesign,
       size: newSize,
@@ -132,10 +149,75 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
     const options = pricingOptions[formData.panelType] || [];
     const selectedOption = options.find(opt => opt.label === selectedLabel);
 
-    setFormData({
-      ...formData,
+    updatePanelId({
       size: selectedLabel,
       price: selectedOption && selectedOption.price > 0 ? selectedOption.price : formData.price
+    });
+  };
+
+  const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportResults(null);
+    setImportProgress(0);
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const rows = results.data as Record<string, string>[];
+        let successCount = 0;
+        let failedCount = 0;
+
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          const getVal = (keys: string[]) => {
+            const foundKey = Object.keys(row).find(k =>
+              keys.some(key => k.toLowerCase().trim() === key.toLowerCase())
+            );
+            return foundKey ? row[foundKey] : '';
+          };
+
+          try {
+            const price = parseFloat(getVal(['price', 'rate', 'unit price', 'cost'])) || 0;
+            const quantity = parseInt(getVal(['quantity', 'qty', 'stock', 'initial quantity'])) || 0;
+
+            const panelData: PanelData = {
+              panelType: (getVal(['panelType', 'type', 'category']) || 'Wall') as PanelData['panelType'],
+              design: getVal(['design', 'pattern', 'style', 'item']),
+              color: getVal(['color', 'colour', 'shade']),
+              size: getVal(['size', 'spec', 'specifications', 'length', 'dims']),
+              price: price,
+              quantity: quantity,
+              status: (getVal(['status']) as PanelData['status']) || (quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock')),
+              imageUrl: getVal(['imageUrl', 'photo', 'image', 'picture', 'photo url', 'image url']).trim(),
+              importDetails: getVal(['importDetails', 'import', 'container', 'details', 'notes', 'import info']).trim(),
+              panelId: '' // Will be set below
+            };
+
+            panelData.panelId = generatePanelId(panelData);
+
+            await onSave(panelData, true);
+            successCount++;
+          } catch (error) {
+            console.error("Failed to import row:", row, error);
+            failedCount++;
+          }
+          setImportProgress(Math.round(((i + 1) / rows.length) * 100));
+        }
+
+        setImportResults({ success: successCount, failed: failedCount });
+        setIsImporting(false);
+        // Clear the input
+        e.target.value = '';
+      },
+      error: (error) => {
+        console.error("CSV Parse Error:", error);
+        alert("Error parsing CSV file.");
+        setIsImporting(false);
+      }
     });
   };
 
@@ -157,15 +239,104 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
             <p className="text-gray-400 text-sm">{initialData ? 'Update panel details and stock' : 'Add a new sandwich panel to your inventory'}</p>
           </div>
         </div>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-white font-medium transition-all shadow-lg shadow-[#E8973A]/20"
-        >
-          <Save className="w-4 h-4" /> Save Panel
-        </button>
+        <div className="flex items-center gap-3">
+          {initialData && onDelete && (
+            <button
+              onClick={async () => {
+                if (confirm('Are you sure you want to delete this panel?')) {
+                  try {
+                    await onDelete();
+                    onBack();
+                  } catch (error) {
+                    console.error("Delete failed:", error);
+                    alert("Failed to delete panel. Please try again.");
+                  }
+                }
+              }}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium transition-all border border-red-500/20"
+            >
+              <Trash2 className="w-4 h-4" /> Delete Panel
+            </button>
+          )}
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-white font-medium transition-all shadow-lg shadow-[#E8973A]/20"
+          >
+            <Save className="w-4 h-4" /> Save Panel
+          </button>
+        </div>
       </div>
 
-      <div className="bg-gray-800 border border-gray-800 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
+      <div className="bg-gray-800 border border-gray-800 rounded-2xl p-8 backdrop-blur-sm shadow-xl space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-700 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#E8973A]/10 flex items-center justify-center">
+              <Upload className="w-6 h-6 text-[#E8973A]" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">Bulk Import Panels</h3>
+              <p className="text-sm text-gray-400">Upload a CSV file to add multiple panels at once</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className={`
+              flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed 
+              ${isImporting ? 'border-gray-600 bg-gray-800/50 cursor-not-allowed' : 'border-[#E8973A]/30 hover:border-[#E8973A] hover:bg-[#E8973A]/5 cursor-pointer'} 
+              transition-all text-sm font-medium
+            `}>
+              {isImporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-[#E8973A]" />
+                  Importing... {importProgress}%
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4 text-[#E8973A]" />
+                  Select CSV File
+                </>
+              )}
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleBulkUpload}
+                disabled={isImporting}
+                className="hidden"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                const csvContent = "panelType,design,color,size,price,quantity,imageUrl,importDetails\nWall,Naro-Span,White,10ft (120 inch) x 17\" width,15230,100,https://example.com/photo.jpg,Imported from Japan Container #12";
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'panel_template.csv';
+                link.click();
+              }}
+              className="text-xs text-[#E8973A] hover:underline flex items-center gap-1"
+            >
+              <Download className="w-3 h-3" /> Template
+            </button>
+          </div>
+        </div>
+
+        {importResults && (
+          <div className={`p-4 rounded-xl flex items-center justify-between ${importResults.failed > 0 ? 'bg-red-500/10 border border-red-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}>
+            <div className="flex items-center gap-3">
+              {importResults.failed > 0 ? <AlertCircle className="w-5 h-5 text-red-400" /> : <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
+              <div>
+                <p className="text-sm font-medium">
+                  Import Complete: {importResults.success} success, {importResults.failed} failed
+                </p>
+              </div>
+            </div>
+            <button onClick={() => setImportResults(null)} className="p-1 hover:bg-white/10 rounded-lg">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
           <div className="space-y-4">
@@ -199,7 +370,7 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
               <label className="text-sm font-medium text-gray-400">Design</label>
               <select
                 value={formData.design}
-                onChange={(e) => setFormData({ ...formData, design: e.target.value })}
+                onChange={(e) => updatePanelId({ design: e.target.value })}
                 className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
               >
                 {availableDesigns.map(design => (
@@ -214,7 +385,18 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
                 type="text"
                 placeholder="e.g. White, Grey"
                 value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                onChange={(e) => updatePanelId({ color: e.target.value })}
+                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-400">Photo URL</label>
+              <input
+                type="text"
+                placeholder="https://..."
+                value={formData.imageUrl || ''}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                 className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all"
               />
             </div>
@@ -275,13 +457,24 @@ export default function AddPanel({ onBack, onSave, initialData }: AddPanelProps)
               <label className="text-sm font-medium text-gray-400">Status</label>
               <select
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as PanelData['status'] })}
                 className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
               >
                 <option value="In Stock">In Stock</option>
                 <option value="Low Stock">Low Stock</option>
                 <option value="Out of Stock">Out of Stock</option>
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-400">Import Details</label>
+              <textarea
+                placeholder="e.g. Container info, Supplier details..."
+                value={formData.importDetails || ''}
+                onChange={(e) => setFormData({ ...formData, importDetails: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all resize-none"
+              />
             </div>
           </div>
 

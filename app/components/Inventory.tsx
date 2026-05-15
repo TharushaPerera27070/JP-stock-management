@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, Plus, Filter, CheckCircle2, AlertCircle, Edit2, Trash2 } from 'lucide-react';
+import { Search, Plus, Filter, CheckCircle2, AlertCircle, Edit2, Trash2, Box } from 'lucide-react';
+import Image from 'next/image';
 import { InventoryItem } from '../types';
 
 interface InventoryProps {
@@ -30,9 +31,9 @@ export default function Inventory({
           <div className="flex items-center gap-4">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input 
-                type="text" 
-                placeholder="Search inventory..." 
+              <input
+                type="text"
+                placeholder="Search inventory..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 pr-4 py-2 bg-black border border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 w-64 placeholder:text-gray-600 transition-all"
@@ -47,10 +48,11 @@ export default function Inventory({
           </button>
         </div>
 
-        <div className="rounded-2xl border border-gray-800 bg-gray-800 backdrop-blur-sm overflow-hidden shadow-2xl">
-          <table className="w-full text-left text-sm whitespace-nowrap">
+        <div className="rounded-2xl border border-gray-800 bg-gray-800 backdrop-blur-sm shadow-2xl overflow-x-auto scrollbar-thin scrollbar-track-gray-900 scrollbar-thumb-gray-700">
+          <table className="w-full min-w-[1000px] text-left text-sm whitespace-nowrap">
             <thead className="bg-black/40 text-gray-400 border-b border-gray-800">
               <tr>
+                <th className="px-6 py-4 font-medium tracking-wider">Photo</th>
                 <th className="px-6 py-4 font-medium tracking-wider">Product</th>
                 <th className="px-6 py-4 font-medium tracking-wider">Panel ID</th>
                 <th className="px-6 py-4 font-medium tracking-wider">Type</th>
@@ -64,6 +66,24 @@ export default function Inventory({
             <tbody className="divide-y divide-white/5">
               {items.filter(i => `${i.design} ${i.panelType} Panel`.toLowerCase().includes(searchQuery.toLowerCase()) || i.panelId.toLowerCase().includes(searchQuery.toLowerCase())).map((item) => (
                 <tr key={item.id} className="hover:bg-gray-800 transition-colors group">
+                  <td className="px-6 py-4">
+                    {item.imageUrl && item.imageUrl.trim() ? (
+                      <div className="w-12 h-12 rounded-lg border border-gray-700 overflow-hidden bg-black/50">
+                        <Image 
+                          src={item.imageUrl.trim()} 
+                          alt={item.design} 
+                          width={48} 
+                          height={48} 
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg border border-gray-700 bg-gray-800/50 flex items-center justify-center">
+                        <Box className="w-6 h-6 text-gray-600" />
+                      </div>
+                    )}
+                  </td>
                   <td className="px-6 py-4">
                     <div className="font-medium text-white">{item.design} {item.panelType} Panel</div>
                     <div className="text-gray-500 text-xs mt-0.5">Updated {item.lastUpdated}</div>
@@ -85,11 +105,10 @@ export default function Inventory({
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-                      item.status === 'In Stock' ? 'bg-gray-800/10 text-gray-300 border-gray-700/20' :
-                      item.status === 'Low Stock' ? 'bg-gray-800/10 text-gray-300 border-gray-700/20' :
-                      'bg-gray-800/10 text-gray-300 border-gray-700/20'
-                    }`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${item.status === 'In Stock' ? 'bg-gray-800/10 text-gray-300 border-gray-700/20' :
+                        item.status === 'Low Stock' ? 'bg-gray-800/10 text-gray-300 border-gray-700/20' :
+                          'bg-gray-800/10 text-gray-300 border-gray-700/20'
+                      }`}>
                       {item.status === 'In Stock' && <CheckCircle2 className="w-3.5 h-3.5" />}
                       {item.status === 'Low Stock' && <AlertCircle className="w-3.5 h-3.5" />}
                       {item.status === 'Out of Stock' && <AlertCircle className="w-3.5 h-3.5" />}
@@ -103,12 +122,20 @@ export default function Inventory({
                     {formatLKR(item.price)}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handleEditPanelClick(item)} className="p-1.5 text-gray-400 hover:text-[#E8973A] hover:bg-[#E8973A]/10 rounded-md transition-colors">
-                        <Edit2 className="w-4 h-4" />
+                    <div className="flex items-center justify-center gap-3">
+                      <button 
+                        onClick={() => handleEditPanelClick(item)} 
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-[#E8973A] bg-gray-800/50 hover:bg-[#E8973A]/10 border border-gray-700/50 hover:border-[#E8973A]/30 rounded-lg transition-all"
+                        title="Edit Panel"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" /> Edit
                       </button>
-                      <button onClick={() => handleDeletePanel(item)} className="p-1.5 text-gray-400 hover:text-gray-300 hover:bg-gray-400/10 rounded-md transition-colors">
-                        <Trash2 className="w-4 h-4" />
+                      <button 
+                        onClick={() => handleDeletePanel(item)} 
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-red-400 bg-gray-800/50 hover:bg-red-500/10 border border-gray-700/50 hover:border-red-500/30 rounded-lg transition-all"
+                        title="Delete Panel"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
                       </button>
                     </div>
                   </td>

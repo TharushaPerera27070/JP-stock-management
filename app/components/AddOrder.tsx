@@ -1,32 +1,17 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 
-export interface OrderLineItem {
-  inventoryId: string;
-  name: string;
-  quantity: number;
-  price: number;
-  total: number;
-}
 
-export interface OrderData {
-  customer: string;
-  date: string;
-  items: number; // Total quantity
-  total: number; // Final total
-  status: 'Pending' | 'Processing' | 'Delivered';
-  lineItems: OrderLineItem[];
-  deliveryFee: number;
-}
+import { InventoryItem, OrderData, Customer } from '../types';
 
 interface AddOrderProps {
   onBack: () => void;
   onSave: (order: OrderData) => void;
-  inventory: any[]; // The InventoryItem[] from page.tsx
-  customers: any[]; // The customer list
+  inventory: InventoryItem[];
+  customers: Customer[];
 }
 
-export default function AddOrder({ onBack, onSave, inventory, customers }: AddOrderProps) {
+export default function AddOrder({ onBack, onSave, inventory }: AddOrderProps) {
   const [formData, setFormData] = useState<OrderData>({
     customer: '',
     date: new Date().toISOString().split('T')[0],
@@ -171,7 +156,7 @@ export default function AddOrder({ onBack, onSave, inventory, customers }: AddOr
             <div className="space-y-4">
               {formData.lineItems.length === 0 && (
                 <div className="text-center py-8 text-gray-500 text-sm">
-                  No items added yet. Click "Add Item" to start.
+                  No items added yet. Click &quot;Add Item&quot; to start.
                 </div>
               )}
               {formData.lineItems.map((item, index) => (
@@ -184,7 +169,7 @@ export default function AddOrder({ onBack, onSave, inventory, customers }: AddOr
                       className="w-full px-3 py-2 bg-black border border-gray-800 rounded-lg text-sm text-white"
                     >
                       <option value="">Select Panel...</option>
-                      {inventory.map((inv: any) => (
+                      {inventory.map((inv) => (
                         <option key={inv.id} value={inv.id}>
                           {inv.design} {inv.panelType} {inv.size ? `(${inv.size})` : ''}
                         </option>
@@ -261,7 +246,7 @@ export default function AddOrder({ onBack, onSave, inventory, customers }: AddOr
             <label className="text-sm font-medium text-gray-400">Status</label>
             <select 
               value={formData.status}
-              onChange={(e) => setFormData({...formData, status: e.target.value as any})}
+              onChange={(e) => setFormData({...formData, status: e.target.value as OrderData['status']})}
               className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
             >
               <option value="Pending">Pending</option>

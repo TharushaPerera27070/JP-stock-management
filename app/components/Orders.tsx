@@ -1,8 +1,10 @@
 import React from 'react';
 import { Search, Plus, Filter, FileText, Edit2 } from 'lucide-react';
 
+import { OrderData } from '../types';
+
 interface OrdersProps {
-  orders: any[];
+  orders: OrderData[];
   setActiveTab: (tab: string) => void;
   formatLKR: (amount: number) => string;
 }

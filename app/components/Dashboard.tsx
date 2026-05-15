@@ -1,12 +1,12 @@
 import React from 'react';
 import { TrendingUp, Package, ShoppingCart, Clock, AlertCircle, ArrowUpRight, FileText } from 'lucide-react';
-import { InventoryItem } from '../types';
+import { InventoryItem, OrderData } from '../types';
 
 interface DashboardProps {
   thisMonthRevenue: number;
   totalValue: number;
   lowStockCount: number;
-  orders: any[];
+  orders: OrderData[];
   items: InventoryItem[];
   setActiveTab: (tab: string) => void;
   formatLKR: (amount: number) => string;

@@ -1,8 +1,10 @@
 import React from 'react';
 import { Search, Plus, Building2, MoreHorizontal, Mail, Phone } from 'lucide-react';
 
+import { Customer } from '../types';
+
 interface CustomersProps {
-  customers: any[];
+  customers: Customer[];
   setActiveTab: (tab: string) => void;
 }
 

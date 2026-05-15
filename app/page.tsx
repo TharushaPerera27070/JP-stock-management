@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Package, Search, Plus, Filter, MoreHorizontal,
-  TrendingUp, AlertCircle, CheckCircle2, Box,
-  Users, Settings, LogOut, Trash2, Edit2, LayoutDashboard,
-  ShoppingCart, BarChart3, Bell, ArrowUpRight, Clock,
-  FileText, Download, Building2, Phone, Mail
+  Search,
+  Box,
+  Users, Settings, LogOut, LayoutDashboard,
+  ShoppingCart, BarChart3, Bell
 } from 'lucide-react';
 import { collection, onSnapshot, query, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -18,7 +17,7 @@ import Inventory from './components/Inventory';
 import Orders from './components/Orders';
 import Customers from './components/Customers';
 import Reports from './components/Reports';
-import { InventoryItem } from './types';
+import { InventoryItem, OrderData, Customer } from './types';
 import Image from 'next/image';
 
 const mockCustomers = [
@@ -61,7 +60,7 @@ export default function InventoryDashboard() {
       const q = query(collection(db, 'panels', type, 'items'));
       const unsub = onSnapshot(q, (snapshot) => {
         const typeItems: InventoryItem[] = [];
-        snapshot.forEach(doc => {
+        snapshot.docs.forEach(doc => {
           typeItems.push({ id: doc.id, ...doc.data() } as InventoryItem);
         });
         allItems[type] = typeItems;
@@ -76,15 +75,15 @@ export default function InventoryDashboard() {
       unsubscribes.forEach(unsub => unsub());
     };
   }, []);
-  const [orders, setOrders] = useState<any[]>([]);
-  const customers = mockCustomers;
+  const [orders, setOrders] = useState<OrderData[]>([]);
+  const customers: Customer[] = mockCustomers;
 
   useEffect(() => {
     const q = query(collection(db, 'orders'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ordersData: any[] = [];
-      snapshot.forEach(doc => {
-        ordersData.push({ id: doc.id, ...doc.data() });
+      const ordersData: OrderData[] = [];
+      snapshot.docs.forEach(doc => {
+        ordersData.push({ id: doc.id, ...doc.data() } as OrderData);
       });
       // Sort orders newest first
       ordersData.sort((a, b) => new Date(b.timestamp || b.date).getTime() - new Date(a.timestamp || a.date).getTime());
@@ -94,7 +93,6 @@ export default function InventoryDashboard() {
   }, []);
 
   const totalValue = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
   const lowStockCount = items.filter(item => item.status === 'Low Stock' || item.status === 'Out of Stock').length;
 
   const thisMonthRevenue = orders.reduce((acc, order) => acc + order.total, 0);
@@ -192,26 +190,32 @@ export default function InventoryDashboard() {
           {activeTab === 'add-panel' && <AddPanel
             initialData={editingPanel ? { ...editingPanel, size: editingPanel.size || '' } : undefined}
             onBack={() => { setActiveTab('inventory'); setEditingPanel(null); }}
-            onSave={async (newPanel) => {
+            onDelete={async () => {
+              if (editingPanel) {
+                const type = editingPanel.panelType === 'Wall/ Ceiling' ? 'WallnCeiling' : editingPanel.panelType;
+                await deleteDoc(doc(db, 'panels', type, 'items', editingPanel.id));
+              }
+            }}
+            onSave={async (newPanel, silent = false) => {
               const date = new Date().toISOString().split('T')[0];
               try {
                 const docId = newPanel.panelType === 'Wall/ Ceiling' ? 'WallnCeiling' : newPanel.panelType;
                 if (editingPanel) {
                   const oldDocId = editingPanel.panelType === 'Wall/ Ceiling' ? 'WallnCeiling' : editingPanel.panelType;
                   if (oldDocId === docId) {
-                    // Type didn't change, update the existing document
                     await updateDoc(doc(db, 'panels', docId, 'items', editingPanel.id), { ...newPanel, lastUpdated: date });
                   } else {
-                    // Type changed, move document to new subcollection
                     await deleteDoc(doc(db, 'panels', oldDocId, 'items', editingPanel.id));
                     await addDoc(collection(db, 'panels', docId, 'items'), { ...newPanel, lastUpdated: date });
                   }
                 } else {
-                  // New document
                   await addDoc(collection(db, 'panels', docId, 'items'), { ...newPanel, lastUpdated: date });
                 }
-                setActiveTab('inventory');
-                setEditingPanel(null);
+                
+                if (!silent) {
+                  setActiveTab('inventory');
+                  setEditingPanel(null);
+                }
               } catch (error) {
                 console.error("Error saving document: ", error);
                 alert("Error saving panel");
