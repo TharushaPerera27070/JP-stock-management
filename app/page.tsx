@@ -5,7 +5,7 @@ import {
   Search, Menu,
   Box,
   Users, Settings, LogOut, LayoutDashboard,
-  ShoppingCart, BarChart3, Bell
+  ShoppingCart, BarChart3, Bell, FileText
 } from 'lucide-react';
 
 import AddPanel from './components/AddPanel';
@@ -16,13 +16,21 @@ import Inventory from './components/Inventory';
 import Orders from './components/Orders';
 import Customers from './components/Customers';
 import Reports from './components/Reports';
+import Documents from './components/Documents';
+import InvoicePage from './invoice/page';
+import QuotationPage from './quotation/page';
+import ReceiptPage from './receipt/page';
+import SettingsPage from './settings/page';
 import { InventoryItem, OrderData, Customer } from './types';
 import Image from 'next/image';
+import Link from 'next/link';
 
 
 
 export default function InventoryDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [editDocId, setEditDocId] = useState<string | undefined>(undefined);
+  const [isViewOnly, setIsViewOnly] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -78,6 +86,7 @@ export default function InventoryDashboard() {
               { id: 'inventory', label: 'Inventory', icon: Box },
               { id: 'orders', label: 'Orders', icon: ShoppingCart },
               { id: 'customers', label: 'Customers', icon: Users },
+              { id: 'documents', label: 'Documents', icon: FileText },
               { id: 'reports', label: 'Reports', icon: BarChart3 },
             ].map((item) => (
               <button
@@ -96,8 +105,14 @@ export default function InventoryDashboard() {
         </div>
 
         <div className="p-6 border-t border-gray-200">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-white hover:text-gray-900 transition-all duration-300">
-            <Settings className="w-5 h-5" />
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${activeTab === 'settings'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:bg-white hover:text-gray-900'
+            }`}
+          >
+            <Settings className={`w-5 h-5 ${activeTab === 'settings' ? 'text-[#E8973A]' : ''}`} />
             <span className="font-medium">Settings</span>
           </button>
           <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 mt-2">
@@ -118,7 +133,16 @@ export default function InventoryDashboard() {
             <button className="md:hidden p-2 -ml-2 rounded-lg hover:bg-gray-200 text-gray-600" onClick={() => setIsSidebarOpen(true)}>
               <Menu className="w-6 h-6" />
             </button>
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight capitalize truncate max-w-[150px] md:max-w-none">{activeTab}</h2>
+            <h2 className="text-xl md:text-2xl font-bold tracking-tight capitalize truncate max-w-[150px] md:max-w-none">
+              {(() => {
+                if (activeTab === 'add-panel') return 'Add Panel';
+                if (activeTab === 'add-customer') return 'Add Customer';
+                if (activeTab === 'add-order') return 'Add Order';
+                if (activeTab.startsWith('create-')) return `Create ${activeTab.split('-')[1]}`;
+                if (activeTab.startsWith('edit-')) return `${isViewOnly ? 'View' : 'Edit'} ${activeTab.split('-')[1]}`;
+                return activeTab;
+              })()}
+            </h2>
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
@@ -151,6 +175,67 @@ export default function InventoryDashboard() {
           {activeTab === 'orders' && <Orders orders={orders} setActiveTab={setActiveTab} formatLKR={formatLKR} />}
           {activeTab === 'customers' && <Customers customers={customers} setActiveTab={setActiveTab} />}
           {activeTab === 'reports' && <Reports />}
+          {activeTab === 'documents' && (
+            <Documents 
+              onEdit={(type, id) => {
+                setEditDocId(id);
+                setIsViewOnly(false);
+                setActiveTab(`edit-${type}`);
+              }} 
+              onView={(type, id) => {
+                setEditDocId(id);
+                setIsViewOnly(true);
+                setActiveTab(`edit-${type}`);
+              }}
+              onCreate={(type) => {
+                setEditDocId(undefined);
+                setIsViewOnly(false);
+                setActiveTab(`create-${type}`);
+              }}
+            />
+          )}
+          {activeTab === 'create-invoice' && (
+            <InvoicePage onBack={() => setActiveTab('documents')} />
+          )}
+          {activeTab === 'create-quotation' && (
+            <QuotationPage onBack={() => setActiveTab('documents')} />
+          )}
+          {activeTab === 'create-receipt' && (
+            <ReceiptPage onBack={() => setActiveTab('documents')} />
+          )}
+          {activeTab === 'edit-invoice' && (
+            <InvoicePage 
+              editId={editDocId} 
+              isViewOnly={isViewOnly} 
+              onBack={() => { 
+                setActiveTab('documents'); 
+                setEditDocId(undefined); 
+                setIsViewOnly(false); 
+              }} 
+            />
+          )}
+          {activeTab === 'edit-quotation' && (
+            <QuotationPage 
+              editId={editDocId} 
+              isViewOnly={isViewOnly} 
+              onBack={() => { 
+                setActiveTab('documents'); 
+                setEditDocId(undefined); 
+                setIsViewOnly(false); 
+              }} 
+            />
+          )}
+          {activeTab === 'edit-receipt' && (
+            <ReceiptPage 
+              editId={editDocId} 
+              isViewOnly={isViewOnly} 
+              onBack={() => { 
+                setActiveTab('documents'); 
+                setEditDocId(undefined); 
+                setIsViewOnly(false); 
+              }} 
+            />
+          )}
           {activeTab === 'add-panel' && <AddPanel
             initialData={editingPanel ? { ...editingPanel, size: editingPanel.size || '' } : undefined}
             onBack={() => { setActiveTab('inventory'); setEditingPanel(null); }}
@@ -175,6 +260,7 @@ export default function InventoryDashboard() {
               }
             }} />}
           {activeTab === 'add-customer' && <AddCustomer onBack={() => setActiveTab('customers')} />}
+          {activeTab === 'settings' && <SettingsPage onBack={() => setActiveTab('dashboard')} />}
           {activeTab === 'add-order' && <AddOrder
             inventory={items}
             customers={customers}
