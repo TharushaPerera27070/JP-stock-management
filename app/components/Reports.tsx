@@ -8,10 +8,10 @@ export default function Reports() {
         <BarChart3 className="w-10 h-10 text-[#E8973A]" />
       </div>
       <h2 className="text-3xl font-bold mb-4">Advanced Analytics Coming Soon</h2>
-      <p className="text-gray-400 max-w-md text-lg mb-8">
+      <p className="text-gray-500 max-w-md text-lg mb-8">
         We are building comprehensive sales reports, stock predictions, and profit margin analysis for your sandwich panels.
       </p>
-      <button className="flex items-center gap-2 px-6 py-3 rounded-full bg-gray-800 hover:bg-white/20 text-white font-medium transition-all">
+      <button className="flex items-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-gray-900/10 text-gray-900 font-medium transition-all">
         <Download className="w-4 h-4" /> Download Basic CSV Report
       </button>
     </div>

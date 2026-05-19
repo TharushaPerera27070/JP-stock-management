@@ -17,8 +17,8 @@ export interface PanelData {
 
 interface AddPanelProps {
   onBack: () => void;
-  onSave: (panel: PanelData, silent?: boolean) => Promise<void>;
-  onDelete?: () => Promise<void>;
+  onSave: (panel: PanelData, silent?: boolean) => void | Promise<void>;
+  onDelete?: () => void | Promise<void>;
   initialData?: PanelData;
 }
 
@@ -230,13 +230,13 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white"
+            className="p-2 hover:bg-white rounded-full transition-colors text-gray-500 hover:text-gray-900"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <h2 className="text-2xl font-bold">{initialData ? 'Edit Panel' : 'Add New Panel'}</h2>
-            <p className="text-gray-400 text-sm">{initialData ? 'Update panel details and stock' : 'Add a new sandwich panel to your inventory'}</p>
+            <p className="text-gray-500 text-sm">{initialData ? 'Update panel details and stock' : 'Add a new sandwich panel to your inventory'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -260,28 +260,28 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
           )}
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-white font-medium transition-all shadow-lg shadow-[#E8973A]/20"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 font-medium transition-all shadow-lg shadow-[#E8973A]/20"
           >
             <Save className="w-4 h-4" /> Save Panel
           </button>
         </div>
       </div>
 
-      <div className="bg-gray-800 border border-gray-800 rounded-2xl p-8 backdrop-blur-sm shadow-xl space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-700 pb-6">
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 md:p-8 backdrop-blur-sm shadow-xl space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-300 pb-6">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-[#E8973A]/10 flex items-center justify-center">
               <Upload className="w-6 h-6 text-[#E8973A]" />
             </div>
             <div>
               <h3 className="text-lg font-bold">Bulk Import Panels</h3>
-              <p className="text-sm text-gray-400">Upload a CSV file to add multiple panels at once</p>
+              <p className="text-sm text-gray-500">Upload a CSV file to add multiple panels at once</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <label className={`
               flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed 
-              ${isImporting ? 'border-gray-600 bg-gray-800/50 cursor-not-allowed' : 'border-[#E8973A]/30 hover:border-[#E8973A] hover:bg-[#E8973A]/5 cursor-pointer'} 
+              ${isImporting ? 'border-gray-600 bg-white/50 cursor-not-allowed' : 'border-[#E8973A]/30 hover:border-[#E8973A] hover:bg-[#E8973A]/5 cursor-pointer'} 
               transition-all text-sm font-medium
             `}>
               {isImporting ? (
@@ -331,7 +331,7 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
                 </p>
               </div>
             </div>
-            <button onClick={() => setImportResults(null)} className="p-1 hover:bg-white/10 rounded-lg">
+            <button onClick={() => setImportResults(null)} className="p-1 hover:bg-gray-900/5 rounded-lg">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -340,24 +340,24 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b border-gray-800 pb-2">Basic Information</h3>
+            <h3 className="text-lg font-medium border-b border-gray-200 pb-2">Basic Information</h3>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Panel ID</label>
+              <label className="text-sm font-medium text-gray-500">Panel ID</label>
               <input
                 type="text"
                 readOnly
                 value={formData.panelId}
-                className="w-full px-4 py-2.5 bg-gray-800 border border-gray-800 rounded-xl focus:outline-none text-gray-400 transition-all cursor-not-allowed"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none text-gray-500 transition-all cursor-not-allowed"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Panel Type</label>
+              <label className="text-sm font-medium text-gray-500">Panel Type</label>
               <select
                 value={formData.panelType}
                 onChange={handlePanelTypeChange}
-                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all appearance-none"
               >
                 <option value="Wall">Wall</option>
                 <option value="Roofing">Roofing</option>
@@ -367,11 +367,11 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Design</label>
+              <label className="text-sm font-medium text-gray-500">Design</label>
               <select
                 value={formData.design}
                 onChange={(e) => updatePanelId({ design: e.target.value })}
-                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all appearance-none"
               >
                 {availableDesigns.map(design => (
                   <option key={design} value={design}>{design}</option>
@@ -380,37 +380,37 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Color</label>
+              <label className="text-sm font-medium text-gray-500">Color</label>
               <input
                 type="text"
                 placeholder="e.g. White, Grey"
                 value={formData.color}
                 onChange={(e) => updatePanelId({ color: e.target.value })}
-                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Photo URL</label>
+              <label className="text-sm font-medium text-gray-500">Photo URL</label>
               <input
                 type="text"
                 placeholder="https://..."
                 value={formData.imageUrl || ''}
                 onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all"
               />
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b border-gray-800 pb-2">Pricing & Stock</h3>
+            <h3 className="text-lg font-medium border-b border-gray-200 pb-2">Pricing & Stock</h3>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Size / Specifications</label>
+              <label className="text-sm font-medium text-gray-500">Size / Specifications</label>
               <select
                 value={formData.size}
                 onChange={handleSizeChange}
-                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all appearance-none"
               >
                 {currentSizeOptions.map(opt => (
                   <option key={opt.label} value={opt.label}>{opt.label}</option>
@@ -419,7 +419,7 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Price (LKR)</label>
+              <label className="text-sm font-medium text-gray-500">Price (LKR)</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">Rs.</span>
                 <input
@@ -427,7 +427,7 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
                   placeholder="0.00"
                   value={formData.price || ''}
                   onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                  className="w-full pl-12 pr-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all"
+                  className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all"
                 />
               </div>
               {formData.size && formData.size.includes('Custom') && (
@@ -438,7 +438,7 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Initial Quantity</label>
+              <label className="text-sm font-medium text-gray-500">Initial Quantity</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
                   <Box className="w-4 h-4" />
@@ -448,17 +448,17 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
                   placeholder="0"
                   value={formData.quantity || ''}
                   onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                  className="w-full pl-12 pr-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all"
+                  className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Status</label>
+              <label className="text-sm font-medium text-gray-500">Status</label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as PanelData['status'] })}
-                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all appearance-none"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all appearance-none"
               >
                 <option value="In Stock">In Stock</option>
                 <option value="Low Stock">Low Stock</option>
@@ -467,13 +467,13 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Import Details</label>
+              <label className="text-sm font-medium text-gray-500">Import Details</label>
               <textarea
                 placeholder="e.g. Container info, Supplier details..."
                 value={formData.importDetails || ''}
                 onChange={(e) => setFormData({ ...formData, importDetails: e.target.value })}
                 rows={3}
-                className="w-full px-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all resize-none"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all resize-none"
               />
             </div>
           </div>

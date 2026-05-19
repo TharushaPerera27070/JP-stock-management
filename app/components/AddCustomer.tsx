@@ -12,77 +12,77 @@ export default function AddCustomer({ onBack }: AddCustomerProps) {
         <div className="flex items-center gap-4">
           <button 
             onClick={onBack}
-            className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white"
+            className="p-2 hover:bg-white rounded-full transition-colors text-gray-500 hover:text-gray-900"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <h2 className="text-2xl font-bold">Add New Customer</h2>
-            <p className="text-gray-400 text-sm">Create a profile for a new contractor or buyer</p>
+            <p className="text-gray-500 text-sm">Create a profile for a new contractor or buyer</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-white font-medium transition-all shadow-lg shadow-[#E8973A]/20">
+        <button className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 font-medium transition-all shadow-lg shadow-[#E8973A]/20">
           <Save className="w-4 h-4" /> Save Customer
         </button>
       </div>
 
-      <div className="bg-gray-800 border border-gray-800 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
+      <div className="bg-white border border-gray-200 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b border-gray-800 pb-2">Contact Details</h3>
+            <h3 className="text-lg font-medium border-b border-gray-200 pb-2">Contact Details</h3>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Full Name</label>
+              <label className="text-sm font-medium text-gray-500">Full Name</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
                   <User className="w-4 h-4" />
                 </span>
-                <input type="text" placeholder="e.g. Nimal Perera" className="w-full pl-12 pr-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all" />
+                <input type="text" placeholder="e.g. Nimal Perera" className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Email Address</label>
+              <label className="text-sm font-medium text-gray-500">Email Address</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
                   <Mail className="w-4 h-4" />
                 </span>
-                <input type="email" placeholder="nimal@example.com" className="w-full pl-12 pr-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all" />
+                <input type="email" placeholder="nimal@example.com" className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Phone Number</label>
+              <label className="text-sm font-medium text-gray-500">Phone Number</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
                   <Phone className="w-4 h-4" />
                 </span>
-                <input type="tel" placeholder="+94 77 123 4567" className="w-full pl-12 pr-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all" />
+                <input type="tel" placeholder="+94 77 123 4567" className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all" />
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b border-gray-800 pb-2">Company Information</h3>
+            <h3 className="text-lg font-medium border-b border-gray-200 pb-2">Company Information</h3>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Company Name</label>
+              <label className="text-sm font-medium text-gray-500">Company Name</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
                   <Building2 className="w-4 h-4" />
                 </span>
-                <input type="text" placeholder="e.g. BuildTech Constructions" className="w-full pl-12 pr-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all" />
+                <input type="text" placeholder="e.g. BuildTech Constructions" className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Billing Address</label>
+              <label className="text-sm font-medium text-gray-500">Billing Address</label>
               <div className="relative">
                 <span className="absolute left-4 top-4 text-gray-500">
                   <MapPin className="w-4 h-4" />
                 </span>
-                <textarea rows={4} placeholder="Full address..." className="w-full pl-12 pr-4 py-2.5 bg-black border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-white transition-all resize-none"></textarea>
+                <textarea rows={4} placeholder="Full address..." className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all resize-none"></textarea>
               </div>
             </div>
           </div>
