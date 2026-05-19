@@ -25,13 +25,20 @@ interface DocumentItem {
 }
 
 interface DocumentsProps {
+  activeSubTab: "invoices" | "quotations" | "receipts";
+  setActiveSubTab: (tab: "invoices" | "quotations" | "receipts") => void;
   onEdit?: (type: "invoice" | "quotation" | "receipt", id: string) => void;
   onView?: (type: "invoice" | "quotation" | "receipt", id: string) => void;
   onCreate?: (type: "invoice" | "quotation" | "receipt") => void;
 }
 
-export default function Documents({ onEdit, onView, onCreate }: DocumentsProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"invoices" | "quotations" | "receipts">("invoices");
+export default function Documents({
+  activeSubTab,
+  setActiveSubTab,
+  onEdit,
+  onView,
+  onCreate
+}: DocumentsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);

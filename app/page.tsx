@@ -5,7 +5,8 @@ import {
   Search, Menu,
   Box,
   Users, Settings, LogOut, LayoutDashboard,
-  ShoppingCart, BarChart3, Bell, FileText
+  ShoppingCart, BarChart3, Bell, FileText,
+  ChevronRight
 } from 'lucide-react';
 
 import AddPanel from './components/AddPanel';
@@ -29,6 +30,7 @@ import Link from 'next/link';
 
 export default function InventoryDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeSubTab, setActiveSubTab] = useState<'invoices' | 'quotations' | 'receipts'>('invoices');
   const [editDocId, setEditDocId] = useState<string | undefined>(undefined);
   const [isViewOnly, setIsViewOnly] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,11 +62,86 @@ export default function InventoryDashboard() {
 
   const formatLKR = (amount: number) => `LKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+  const getBreadcrumbs = (): { label: string; onClick?: () => void }[] => {
+    switch (activeTab) {
+      case 'dashboard':
+        return [{ label: 'Dashboard' }];
+      case 'inventory':
+        return [{ label: 'Inventory' }];
+      case 'add-panel':
+        return [
+          { label: 'Inventory', onClick: () => { setActiveTab('inventory'); setEditingPanel(null); } },
+          { label: editingPanel ? 'Edit Panel' : 'Add Panel' }
+        ];
+      case 'orders':
+        return [{ label: 'Orders' }];
+      case 'add-order':
+        return [
+          { label: 'Orders', onClick: () => setActiveTab('orders') },
+          { label: 'Add Order' }
+        ];
+      case 'customers':
+        return [{ label: 'Customers' }];
+      case 'add-customer':
+        return [
+          { label: 'Customers', onClick: () => setActiveTab('customers') },
+          { label: 'Add Customer' }
+        ];
+      case 'reports':
+        return [{ label: 'Reports' }];
+      case 'settings':
+        return [{ label: 'Settings' }];
+      case 'documents':
+        return [
+          { label: 'Document', onClick: () => setActiveTab('documents') },
+          { label: activeSubTab.charAt(0).toUpperCase() + activeSubTab.slice(1) }
+        ];
+      case 'create-invoice':
+        return [
+          { label: 'Document', onClick: () => setActiveTab('documents') },
+          { label: 'Invoices', onClick: () => { setActiveTab('documents'); setActiveSubTab('invoices'); } },
+          { label: 'Create Invoice' }
+        ];
+      case 'edit-invoice':
+        return [
+          { label: 'Document', onClick: () => setActiveTab('documents') },
+          { label: 'Invoices', onClick: () => { setActiveTab('documents'); setActiveSubTab('invoices'); setEditDocId(undefined); setIsViewOnly(false); } },
+          { label: isViewOnly ? 'View Invoice' : 'Edit Invoice' }
+        ];
+      case 'create-quotation':
+        return [
+          { label: 'Document', onClick: () => setActiveTab('documents') },
+          { label: 'Quotations', onClick: () => { setActiveTab('documents'); setActiveSubTab('quotations'); } },
+          { label: 'Create Quotation' }
+        ];
+      case 'edit-quotation':
+        return [
+          { label: 'Document', onClick: () => setActiveTab('documents') },
+          { label: 'Quotations', onClick: () => { setActiveTab('documents'); setActiveSubTab('quotations'); setEditDocId(undefined); setIsViewOnly(false); } },
+          { label: isViewOnly ? 'View Quotation' : 'Edit Quotation' }
+        ];
+      case 'create-receipt':
+        return [
+          { label: 'Document', onClick: () => setActiveTab('documents') },
+          { label: 'Receipts', onClick: () => { setActiveTab('documents'); setActiveSubTab('receipts'); } },
+          { label: 'Create Receipt' }
+        ];
+      case 'edit-receipt':
+        return [
+          { label: 'Document', onClick: () => setActiveTab('documents') },
+          { label: 'Receipts', onClick: () => { setActiveTab('documents'); setActiveSubTab('receipts'); setEditDocId(undefined); setIsViewOnly(false); } },
+          { label: isViewOnly ? 'View Receipt' : 'Edit Receipt' }
+        ];
+      default:
+        return [{ label: activeTab.charAt(0).toUpperCase() + activeTab.slice(1) }];
+    }
+  };
+
   return (
     <div className="flex h-screen w-full bg-gray-50 text-gray-900 font-sans overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -105,12 +182,12 @@ export default function InventoryDashboard() {
         </div>
 
         <div className="p-6 border-t border-gray-200">
-          <button 
+          <button
             onClick={() => setActiveTab('settings')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${activeTab === 'settings'
               ? 'bg-white text-gray-900 shadow-sm'
               : 'text-gray-500 hover:bg-white hover:text-gray-900'
-            }`}
+              }`}
           >
             <Settings className={`w-5 h-5 ${activeTab === 'settings' ? 'text-[#E8973A]' : ''}`} />
             <span className="font-medium">Settings</span>
@@ -133,16 +210,30 @@ export default function InventoryDashboard() {
             <button className="md:hidden p-2 -ml-2 rounded-lg hover:bg-gray-200 text-gray-600" onClick={() => setIsSidebarOpen(true)}>
               <Menu className="w-6 h-6" />
             </button>
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight capitalize truncate max-w-[150px] md:max-w-none">
-              {(() => {
-                if (activeTab === 'add-panel') return 'Add Panel';
-                if (activeTab === 'add-customer') return 'Add Customer';
-                if (activeTab === 'add-order') return 'Add Order';
-                if (activeTab.startsWith('create-')) return `Create ${activeTab.split('-')[1]}`;
-                if (activeTab.startsWith('edit-')) return `${isViewOnly ? 'View' : 'Edit'} ${activeTab.split('-')[1]}`;
-                return activeTab;
-              })()}
-            </h2>
+            <div className="flex items-center gap-1 md:gap-2 text-sm md:text-base font-semibold text-gray-500 overflow-x-auto scrollbar-none py-1">
+              {getBreadcrumbs().map((crumb, idx, arr) => {
+                const isLast = idx === arr.length - 1;
+                return (
+                  <React.Fragment key={idx}>
+                    {idx > 0 && (
+                      <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    )}
+                    {crumb.onClick && !isLast ? (
+                      <button
+                        onClick={crumb.onClick}
+                        className="hover:text-[#E8973A] transition-colors cursor-pointer whitespace-nowrap text-gray-500 font-medium"
+                      >
+                        {crumb.label}
+                      </button>
+                    ) : (
+                      <span className={`whitespace-nowrap ${isLast ? 'text-gray-900 text-lg md:text-2xl font-bold tracking-tight' : 'text-gray-500 font-medium'}`}>
+                        {crumb.label}
+                      </span>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
@@ -176,12 +267,14 @@ export default function InventoryDashboard() {
           {activeTab === 'customers' && <Customers customers={customers} setActiveTab={setActiveTab} />}
           {activeTab === 'reports' && <Reports />}
           {activeTab === 'documents' && (
-            <Documents 
+            <Documents
+              activeSubTab={activeSubTab}
+              setActiveSubTab={setActiveSubTab}
               onEdit={(type, id) => {
                 setEditDocId(id);
                 setIsViewOnly(false);
                 setActiveTab(`edit-${type}`);
-              }} 
+              }}
               onView={(type, id) => {
                 setEditDocId(id);
                 setIsViewOnly(true);
@@ -204,36 +297,36 @@ export default function InventoryDashboard() {
             <ReceiptPage onBack={() => setActiveTab('documents')} />
           )}
           {activeTab === 'edit-invoice' && (
-            <InvoicePage 
-              editId={editDocId} 
-              isViewOnly={isViewOnly} 
-              onBack={() => { 
-                setActiveTab('documents'); 
-                setEditDocId(undefined); 
-                setIsViewOnly(false); 
-              }} 
+            <InvoicePage
+              editId={editDocId}
+              isViewOnly={isViewOnly}
+              onBack={() => {
+                setActiveTab('documents');
+                setEditDocId(undefined);
+                setIsViewOnly(false);
+              }}
             />
           )}
           {activeTab === 'edit-quotation' && (
-            <QuotationPage 
-              editId={editDocId} 
-              isViewOnly={isViewOnly} 
-              onBack={() => { 
-                setActiveTab('documents'); 
-                setEditDocId(undefined); 
-                setIsViewOnly(false); 
-              }} 
+            <QuotationPage
+              editId={editDocId}
+              isViewOnly={isViewOnly}
+              onBack={() => {
+                setActiveTab('documents');
+                setEditDocId(undefined);
+                setIsViewOnly(false);
+              }}
             />
           )}
           {activeTab === 'edit-receipt' && (
-            <ReceiptPage 
-              editId={editDocId} 
-              isViewOnly={isViewOnly} 
-              onBack={() => { 
-                setActiveTab('documents'); 
-                setEditDocId(undefined); 
-                setIsViewOnly(false); 
-              }} 
+            <ReceiptPage
+              editId={editDocId}
+              isViewOnly={isViewOnly}
+              onBack={() => {
+                setActiveTab('documents');
+                setEditDocId(undefined);
+                setIsViewOnly(false);
+              }}
             />
           )}
           {activeTab === 'add-panel' && <AddPanel

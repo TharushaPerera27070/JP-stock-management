@@ -110,7 +110,7 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
   if (!mounted) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#E8973A] border-t-transparent" />
           <p className="text-sm font-semibold text-gray-500">Loading Configuration...</p>
@@ -121,13 +121,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4 font-sans">
-        <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
-          <div className="mb-6 text-center">
-            <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-black text-xs font-semibold uppercase tracking-widest transition-colors">
-              <ArrowLeft className="h-3 w-3" /> Back to Home
-            </Link>
-          </div>
+      <div className="flex min-h-screen flex-col items-center justify-center p-4 font-sans">
+        <div className="w-full max-w-md">
+
 
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 md:p-10 overflow-hidden relative">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#E8973A] to-[#be7221]" />
