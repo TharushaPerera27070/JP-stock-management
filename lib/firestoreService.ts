@@ -40,12 +40,28 @@ import { db } from "./firebase";
 const isClient = typeof window !== "undefined";
 
 function tsNow() {
-  return serverTimestamp();
+  return new Date().toISOString();
 }
 
 function serialize(data: any): any {
   // Strip undefined fields so Firestore doesn't throw
   return JSON.parse(JSON.stringify(data));
+}
+
+function normalizeDateValue(value: any): string {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Timestamp) return value.toDate().toISOString();
+  if (typeof value?.toDate === "function") return value.toDate().toISOString();
+  return "";
+}
+
+function normalizePanelRecord(data: any) {
+  return {
+    ...data,
+    lastUpdated: normalizeDateValue(data?.lastUpdated),
+  };
 }
 
 // ─── INVOICES ─────────────────────────────────────────────────────────────────
@@ -226,7 +242,7 @@ export async function updatePanelInFirestore(id: string, data: any): Promise<voi
 
 export async function getPanelsFromFirestore(): Promise<any[]> {
   const snap = await getDocs(query(collection(db, "inventory"), orderBy("lastUpdated", "desc")));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs.map((d) => normalizePanelRecord({ id: d.id, ...d.data() }));
 }
 
 export async function deletePanelFromFirestore(id: string): Promise<void> {
