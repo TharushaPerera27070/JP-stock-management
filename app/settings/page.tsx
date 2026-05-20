@@ -21,6 +21,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { useSettingsStore, BankDetail, LineItemPreset } from "@/lib/settingsStore";
+import { useDialog } from "../components/Dialog";
 
 interface SettingsPageProps {
   onBack?: () => void;
@@ -28,6 +29,7 @@ interface SettingsPageProps {
 
 export default function SettingsPage({ onBack }: SettingsPageProps) {
   const router = useRouter();
+  const { confirm, toast } = useDialog();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"company" | "banks" | "terms" | "presets" | "calculator">("company");
 
@@ -121,61 +123,62 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4 font-sans">
-        <div className="w-full max-w-md">
+      <div className="flex-1 flex flex-col bg-transparent font-sans min-h-screen overflow-hidden">
+        {/* Content: card on the right */}
+        <div className="flex-1 flex items-center justify-center pb-24">
+          <div className="w-full max-w-md">
+            <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 md:p-10 overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#E8973A] to-[#be7221]" />
 
-
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 md:p-10 overflow-hidden relative">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#E8973A] to-[#be7221]" />
-
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-[#E8973A]/10 rounded-full flex items-center justify-center text-[#E8973A]">
-                <Lock className="w-8 h-8" />
-              </div>
-            </div>
-
-            <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">Protected Access</h1>
-            <p className="text-center text-gray-500 text-sm mb-8">Please enter the administrative credentials to modify system parameters.</p>
-
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="admin@domain.com"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] focus:bg-white outline-none transition-all duration-200 text-sm font-medium text-gray-900 shadow-inner"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">Superuser Password</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••••••"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] focus:bg-white outline-none transition-all duration-200 text-sm font-medium text-gray-900 shadow-inner"
-                />
-              </div>
-
-              {loginError && (
-                <div className="flex items-center gap-2 text-red-600 text-xs font-semibold bg-red-50 p-3 rounded-lg border border-red-100 animate-in slide-in-from-top-1">
-                  <ShieldAlert className="w-4 h-4 shrink-0" />
-                  {loginError}
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-[#E8973A]/10 rounded-full flex items-center justify-center text-[#E8973A]">
+                  <Lock className="w-8 h-8" />
                 </div>
-              )}
+              </div>
 
-              <button
-                type="submit"
-                className="w-full py-3.5 bg-[#E8973A] hover:bg-[#d4832b] text-white rounded-xl font-bold text-sm tracking-wide transition shadow-md active:scale-[0.98] flex items-center justify-center gap-2 mt-6 shadow-[#E8973A]/20 hover:shadow-lg hover:shadow-[#E8973A]/30"
-              >
-                Unlock Configuration
-              </button>
-            </form>
+              <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">Protected Access</h1>
+              <p className="text-center text-gray-500 text-sm mb-8">Please enter the administrative credentials to modify system parameters.</p>
+
+              <form onSubmit={handleAuthSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="admin@domain.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] focus:bg-white outline-none transition-all duration-200 text-sm font-medium text-gray-900 shadow-inner"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">Superuser Password</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••••••"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] focus:bg-white outline-none transition-all duration-200 text-sm font-medium text-gray-900 shadow-inner"
+                  />
+                </div>
+
+                {loginError && (
+                  <div className="flex items-center gap-2 text-red-600 text-xs font-semibold bg-red-50 p-3 rounded-lg border border-red-100 animate-in slide-in-from-top-1">
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                    {loginError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 rounded-xl font-bold text-sm tracking-wide transition shadow-md active:scale-[0.98] flex items-center justify-center gap-2 mt-6 shadow-[#E8973A]/20 hover:shadow-lg hover:shadow-[#E8973A]/30 cursor-pointer"
+                >
+                  Unlock Configuration
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
@@ -233,8 +236,14 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
     }
   };
 
-  const handleDeleteBank = (id: string) => {
-    if (confirm("Are you sure you want to delete this bank account?")) {
+  const handleDeleteBank = async (id: string) => {
+    const ok = await confirm({
+      title: "Delete Bank Account",
+      message: "Are you sure you want to delete this bank account? This action cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (ok) {
       settings.deleteBankDetail(id);
       triggerFeedback("Bank account removed.");
     }
@@ -273,17 +282,29 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
     }
   };
 
-  const handleDeletePreset = (id: string) => {
-    if (confirm("Are you sure you want to delete this pricing preset?")) {
+  const handleDeletePreset = async (id: string) => {
+    const ok = await confirm({
+      title: "Delete Pricing Preset",
+      message: "Are you sure you want to delete this pricing preset? This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (ok) {
       settings.deletePreset(id);
       triggerFeedback("Pricing preset deleted.");
     }
   };
 
-  const handleResetDefaults = () => {
-    if (confirm("Are you sure you want to reset ALL settings, pricing, bank details, and presets to their factory defaults? This cannot be undone.")) {
+  const handleResetDefaults = async () => {
+    const ok = await confirm({
+      title: "Reset All Settings",
+      message: "Are you sure you want to reset ALL settings, pricing, bank details, and presets to factory defaults? This cannot be undone.",
+      confirmLabel: "Reset Everything",
+      cancelLabel: "Keep Settings",
+      variant: "danger",
+    });
+    if (ok) {
       settings.resetToDefaults();
-      // Sync local states
       setTimeout(() => {
         setCompanyName(settings.company.name);
         setCompanyAddress(settings.company.address);
@@ -308,7 +329,7 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
   });
 
   return (
-    <div className="flex min-h-screen flex-col bg-white/75 font-sans text-slate-800">
+    <div className="flex-1 flex flex-col bg-transparent font-sans text-slate-800">
       {/* Toast Feedback */}
       {feedback && (
         <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl px-5 py-3.5 shadow-xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${feedback.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
@@ -318,53 +339,34 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
         </div>
       )}
 
-      {/* Top Header */}
-      <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-md px-4 md:px-6 py-4">
-        <div className="mx-auto flex max-w-7xl flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 md:gap-4">
-            {onBack ? (
-              <button
-                onClick={onBack}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-gray-200 bg-white text-gray-500 hover:text-black hover:shadow-sm transition-all duration-150 active:scale-95 cursor-pointer"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-            ) : (
-              <Link
-                href="/"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-gray-200 bg-white text-gray-500 hover:text-black hover:shadow-sm transition-all duration-150 active:scale-95"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-            )}
-            <div className="min-w-0">
-              <h1 className="text-xl font-semibold text-slate-900 tracking-tight md:text-2xl truncate">
-                System Settings
-              </h1>
-              <p className="text-[10px] md:text-xs text-gray-500 truncate sm:whitespace-normal">Configure metadata, banking, and rates.</p>
-            </div>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 relative z-10">
+        {/* Settings Integrated Subbar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 bg-white/80 backdrop-blur-md p-6 rounded-2xl border border-gray-200/60 shadow-sm">
+          <div>
+            <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">System Configuration</h2>
+            <p className="text-xs text-gray-500 mt-1">Configure company profiles, active bank details, and sidewall rates.</p>
           </div>
-
-          {/* <button
-            onClick={handleResetDefaults}
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 transition shadow-sm active:scale-[0.98] text-xs sm:text-sm whitespace-nowrap w-full sm:w-auto"
-          >
-            <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            Reset Defaults
-          </button> */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleResetDefaults}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2.5 px-4 transition active:scale-[0.98] text-xs cursor-pointer border border-red-200/50"
+            >
+              <RotateCcw className="h-3.5 w-3.5 animate-pulse" />
+              Reset Defaults
+            </button>
+          </div>
         </div>
-      </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           {/* Sidebar Navigation (Tabs) */}
           <div className="lg:col-span-1">
-            <nav className="flex flex-row overflow-x-auto gap-1 rounded-2xl bg-white p-2 shadow-sm border border-slate-100 lg:flex-col lg:overflow-visible">
+            <nav className="flex flex-row overflow-x-auto gap-1.5 rounded-2xl bg-white p-2 border border-gray-200/60 lg:flex-col lg:overflow-visible shadow-sm">
               <button
+                type="button"
                 onClick={() => setActiveTab("company")}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-xs font-semibold transition-all duration-150 whitespace-nowrap lg:w-full ${activeTab === "company"
-                  ? "bg-[#E8973A]/10 text-[#E8973A]"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${activeTab === "company"
+                  ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                   }`}
               >
                 <Building className="h-4 w-4" />
@@ -372,10 +374,11 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab("banks")}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-xs font-semibold transition-all duration-150 whitespace-nowrap lg:w-full ${activeTab === "banks"
-                  ? "bg-[#E8973A]/10 text-[#E8973A]"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${activeTab === "banks"
+                  ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                   }`}
               >
                 <CreditCard className="h-4 w-4" />
@@ -383,10 +386,11 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab("terms")}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-xs font-semibold transition-all duration-150 whitespace-nowrap lg:w-full ${activeTab === "terms"
-                  ? "bg-[#E8973A]/10 text-[#E8973A]"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${activeTab === "terms"
+                  ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                   }`}
               >
                 <FileText className="h-4 w-4" />
@@ -394,26 +398,16 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab("presets")}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-xs font-semibold transition-all duration-150 whitespace-nowrap lg:w-full ${activeTab === "presets"
-                  ? "bg-[#E8973A]/10 text-[#E8973A]"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${activeTab === "presets"
+                  ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                   }`}
               >
                 <Briefcase className="h-4 w-4" />
                 Pricing Presets
               </button>
-
-              {/* <button
-                onClick={() => setActiveTab("calculator")}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-xs font-semibold transition-all duration-150 whitespace-nowrap lg:w-full ${activeTab === "calculator"
-                  ? "bg-[#E8973A]/10 text-[#E8973A]"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                  }`}
-              >
-                <Sliders className="h-4 w-4" />
-                Calculator Rates
-              </button> */}
             </nav>
           </div>
 
@@ -425,62 +419,62 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               {activeTab === "company" && (
                 <form onSubmit={handleSaveCompany} className="space-y-6">
                   <div className="border-b border-slate-100 pb-4">
-                    <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Company Profile Settings</h2>
+                    <h2 className="text-lg font-bold text-gray-900 tracking-tight">Company Profile Settings</h2>
                     <p className="text-xs text-gray-500">Edit core company details printed as issuer on Invoices & Quotations.</p>
                   </div>
 
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Company Name</label>
+                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">Company Name</label>
                       <input
                         type="text"
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-medium text-black bg-white shadow-sm"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-medium transition-all text-gray-900 placeholder:text-gray-400"
                         required
                       />
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Corporate Address</label>
+                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">Corporate Address</label>
                       <textarea
                         value={companyAddress}
                         onChange={(e) => setCompanyAddress(e.target.value)}
                         rows={3}
-                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-medium text-black bg-white shadow-sm resize-none"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-medium transition-all text-gray-900 placeholder:text-gray-400 resize-none"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Primary Contact Email</label>
+                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">Primary Contact Email</label>
                       <input
                         type="email"
                         value={companyEmail}
                         onChange={(e) => setCompanyEmail(e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-medium text-black bg-white shadow-sm"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-medium transition-all text-gray-900 placeholder:text-gray-400"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Website Domain</label>
+                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">Website Domain</label>
                       <input
                         type="text"
                         value={companyWebsite}
                         onChange={(e) => setCompanyWebsite(e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-medium text-black bg-white shadow-sm"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-medium transition-all text-gray-900 placeholder:text-gray-400"
                         required
                       />
                     </div>
 
                     <div className="md:col-span-2">
                       <div className="flex items-center justify-between mb-2">
-                        <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider">Phone Numbers</label>
+                        <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Phone Numbers</label>
                         <button
                           type="button"
                           onClick={() => setCompanyPhones([...companyPhones, ""])}
-                          className="flex items-center gap-1 text-[11px] font-semibold text-[#E8973A] hover:underline"
+                          className="flex items-center gap-1 text-[11px] font-bold text-[#E8973A] hover:text-[#d4832b] hover:underline"
                         >
                           <Plus className="h-3 w-3" /> Add Phone
                         </button>
@@ -497,14 +491,14 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                                 setCompanyPhones(newPhones);
                               }}
                               placeholder="e.g. +94 (0) 779 437 999"
-                              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-medium text-black bg-white shadow-sm"
+                              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-medium transition-all text-gray-900 placeholder:text-gray-400"
                               required
                             />
                             {companyPhones.length > 1 && (
                               <button
                                 type="button"
                                 onClick={() => setCompanyPhones(companyPhones.filter((_, idx) => idx !== pIdx))}
-                                className="flex h-[42px] w-[42px] items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                                className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -517,7 +511,7 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
                   <button
                     type="submit"
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#E8973A] to-[#d4832b] px-6 py-3 text-sm font-semibold text-white shadow-md hover:shadow-lg active:scale-[0.98] transition-all duration-150"
+                    className="flex items-center gap-2 rounded-xl bg-[#E8973A] hover:bg-[#d4832b] px-6 py-3.5 text-sm font-bold text-gray-900 shadow-md shadow-[#E8973A]/10 hover:shadow-lg hover:shadow-[#E8973A]/20 active:scale-[0.98] transition-all cursor-pointer"
                   >
                     <Save className="h-4.5 w-4.5" />
                     Save Profile Settings
@@ -1106,8 +1100,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                             <div className="flex items-start justify-between mb-1.5 gap-1">
                               <label className="block text-[11px] font-semibold text-slate-800 leading-tight">{panel.heightLabel}</label>
                               <button
-                                onClick={() => {
-                                  if (confirm(`Permanently delete panel "${panel.heightLabel}" and any associated presets?`)) {
+                                onClick={async () => {
+                                  const ok = await confirm({ title: "Delete Panel", message: `Permanently delete panel "${panel.heightLabel}" and all associated presets? This cannot be undone.`, confirmLabel: "Delete", variant: "danger" });
+                                  if (ok) {
                                     settings.deleteHardPanel("wall", panel.id);
                                     triggerFeedback("Panel and associated presets deleted");
                                   }
@@ -1171,8 +1166,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                             <div className="flex items-start justify-between mb-1.5 gap-1">
                               <label className="block text-[11px] font-semibold text-slate-800 leading-tight">{panel.heightLabel}</label>
                               <button
-                                onClick={() => {
-                                  if (confirm(`Permanently delete panel "${panel.heightLabel}" and any associated presets?`)) {
+                                onClick={async () => {
+                                  const ok = await confirm({ title: "Delete Panel", message: `Permanently delete panel "${panel.heightLabel}" and all associated presets? This cannot be undone.`, confirmLabel: "Delete", variant: "danger" });
+                                  if (ok) {
                                     settings.deleteHardPanel("ceiling", panel.id);
                                     triggerFeedback("Panel and associated presets deleted");
                                   }
@@ -1236,8 +1232,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                             <div className="flex items-start justify-between mb-1.5 gap-1">
                               <label className="block text-[11px] font-semibold text-slate-800 leading-tight">{panel.heightLabel}</label>
                               <button
-                                onClick={() => {
-                                  if (confirm(`Permanently delete panel "${panel.heightLabel}" and any associated presets?`)) {
+                                onClick={async () => {
+                                  const ok = await confirm({ title: "Delete Panel", message: `Permanently delete panel "${panel.heightLabel}" and all associated presets? This cannot be undone.`, confirmLabel: "Delete", variant: "danger" });
+                                  if (ok) {
                                     settings.deleteHardPanel("roofing", panel.id);
                                     triggerFeedback("Panel and associated presets deleted");
                                   }

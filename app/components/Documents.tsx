@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useDialog } from "./Dialog";
 import { Search, Plus, Filter, FileText, Edit2, Trash2, Eye, Receipt } from "lucide-react";
 import Link from "next/link";
 import {
@@ -39,6 +40,7 @@ export default function Documents({
   onView,
   onCreate
 }: DocumentsProps) {
+  const { confirm, toast } = useDialog();
   const [searchQuery, setSearchQuery] = useState("");
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,13 +70,20 @@ export default function Documents({
 
   const handleDelete = async (id: string, docNo: string) => {
     const docTypeLabel = activeSubTab.slice(0, -1); // "invoice", "quotation", "receipt"
-    if (confirm(`Are you sure you want to delete ${docTypeLabel} ${docNo}?`)) {
+    const ok = await confirm({
+      title: `Delete ${docTypeLabel.charAt(0).toUpperCase() + docTypeLabel.slice(1)}`,
+      message: `Are you sure you want to permanently delete ${docTypeLabel} ${docNo}? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (ok) {
       try {
         await deleteDocumentFromFirestore(activeSubTab.slice(0, -1) as any, id);
-        alert(`${docTypeLabel.toUpperCase()} deleted successfully.`);
+        toast({ message: `${docTypeLabel.toUpperCase()} deleted successfully.`, type: "success" });
         loadDocuments();
       } catch (error) {
         console.error("Error deleting document:", error);
+        toast({ message: "Failed to delete document. Please try again.", type: "error" });
       }
     }
   };

@@ -8,19 +8,7 @@ interface AddCustomerProps {
 export default function AddCustomer({ onBack }: AddCustomerProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={onBack}
-            className="p-2 hover:bg-white rounded-full transition-colors text-gray-500 hover:text-gray-900"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold">Add New Customer</h2>
-            <p className="text-gray-500 text-sm">Create a profile for a new contractor or buyer</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-end">
         <button className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 font-medium transition-all shadow-lg shadow-[#E8973A]/20">
           <Save className="w-4 h-4" /> Save Customer
         </button>
@@ -28,10 +16,10 @@ export default function AddCustomer({ onBack }: AddCustomerProps) {
 
       <div className="bg-white border border-gray-200 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          
+
           <div className="space-y-4">
             <h3 className="text-lg font-medium border-b border-gray-200 pb-2">Contact Details</h3>
-            
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-500">Full Name</label>
               <div className="relative">
@@ -65,7 +53,7 @@ export default function AddCustomer({ onBack }: AddCustomerProps) {
 
           <div className="space-y-4">
             <h3 className="text-lg font-medium border-b border-gray-200 pb-2">Company Information</h3>
-            
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-500">Company Name</label>
               <div className="relative">
@@ -86,7 +74,7 @@ export default function AddCustomer({ onBack }: AddCustomerProps) {
               </div>
             </div>
           </div>
-          
+
         </div>
       </div>
     </div>

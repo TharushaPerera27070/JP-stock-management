@@ -77,16 +77,21 @@ function InvoiceEditor({ propEditId, propIsViewOnly, onBack }: { propEditId?: st
 
   const handleInvoiceTypeChange = (type: "normal" | "cash") => {
     setInvoiceType(type);
+    
+    let count = 1;
+    const match = invoiceNo.match(/\d+$/);
+    if (match) {
+      count = parseInt(match[0], 10);
+    }
+    
     if (type === "cash") {
       setTitle("CASH INVOICE");
-      if (invoiceNo.startsWith("# ") && !invoiceNo.startsWith("# C")) {
-        setInvoiceNo(invoiceNo.replace("# ", "# C"));
-      }
+      setInvoiceNo(`A000${count}`);
     } else {
       setTitle("INVOICE");
-      if (invoiceNo.startsWith("# C")) {
-        setInvoiceNo(invoiceNo.replace("# C", "# "));
-      }
+      const yearShort = new Date().getFullYear().toString().slice(-2);
+      const countStr = count.toString().padStart(3, "0");
+      setInvoiceNo(`# ${yearShort} - ${countStr}`);
     }
   };
 
@@ -201,6 +206,7 @@ function InvoiceEditor({ propEditId, propIsViewOnly, onBack }: { propEditId?: st
     await exportToPDF("invoice-preview", `${invoiceNo}.pdf`);
     if (!isViewMode) {
       await saveCurrentInvoice();
+      if (onBack) onBack();
     }
   };
 
@@ -208,6 +214,7 @@ function InvoiceEditor({ propEditId, propIsViewOnly, onBack }: { propEditId?: st
     await exportToPrinter("invoice-preview");
     if (!isViewMode) {
       await saveCurrentInvoice();
+      if (onBack) onBack();
     }
   };
 
@@ -228,31 +235,6 @@ function InvoiceEditor({ propEditId, propIsViewOnly, onBack }: { propEditId?: st
 
   return (
     <div className="flex min-h-screen flex-col font-sans">
-      {isViewMode && (
-        <div className="bg-[#E8973A] text-white flex items-center justify-between px-4 md:px-8 py-2 text-xs font-bold tracking-widest uppercase sticky top-0 z-[40] shadow-sm border-b border-orange-600/20 backdrop-blur-md bg-opacity-95 animate-in slide-in-from-top duration-300">
-          <div className="w-20 hidden sm:block" /> {/* Spacer */}
-          <span className="text-center flex-1 text-[10px] sm:text-xs">
-            View Only Mode • Admin authorization required to edit
-          </span>
-          {onBack ? (
-            <button
-              onClick={onBack}
-              className="px-3 py-1.5 bg-black/20 hover:bg-black/30 text-white font-bold transition-all rounded-lg flex items-center gap-1 active:scale-95 text-[9px] sm:text-[10px] border border-white/10 cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-              Close View
-            </button>
-          ) : (
-            <Link
-              href="/"
-              className="px-3 py-1.5 bg-black/20 hover:bg-black/30 text-white font-bold transition-all rounded-lg flex items-center gap-1 active:scale-95 text-[9px] sm:text-[10px] border border-white/10"
-            >
-              <X className="w-3.5 h-3.5" />
-              Close View
-            </Link>
-          )}
-        </div>
-      )}
       <main className={`flex-1 pb-20 ${isViewMode ? "pointer-events-none select-none opacity-75" : ""}`}>
 
         {/* Calculator */}
@@ -722,7 +704,7 @@ function InvoiceEditor({ propEditId, propIsViewOnly, onBack }: { propEditId?: st
 
       {/* Preview Dialog */}
       {showPreview && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4">
+        <div className="fixed inset-y-0 right-0 left-0 md:left-64 z-[100] bg-black/60 backdrop-blur-sm flex justify-center items-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="p-4 bg-gray-50 border-b border-gray-150 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
               <div>
@@ -749,7 +731,10 @@ function InvoiceEditor({ propEditId, propIsViewOnly, onBack }: { propEditId?: st
                   Print Now
                 </button>
                 <button
-                  onClick={() => setShowPreview(false)}
+                  onClick={() => {
+                    setShowPreview(false);
+                    if (isViewMode && onBack) onBack();
+                  }}
                   className="flex-1 sm:flex-initial px-5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-xl transition-all duration-150 font-bold text-xs uppercase tracking-wider active:scale-[0.98]"
                 >
                   Close

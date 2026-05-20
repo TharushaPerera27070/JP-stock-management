@@ -8,6 +8,7 @@ import {
   ShoppingCart, BarChart3, Bell, FileText,
   ChevronRight
 } from 'lucide-react';
+import { useDialog } from './components/Dialog';
 
 import AddPanel from './components/AddPanel';
 import AddCustomer from './components/AddCustomer';
@@ -25,10 +26,20 @@ import SettingsPage from './settings/page';
 import { InventoryItem, OrderData, Customer } from './types';
 import Image from 'next/image';
 import Link from 'next/link';
+import { getInvoicesFromFirestore } from '@/lib/documentStorage';
+import {
+  getOrdersFromFirestore,
+  saveOrderToFirestore,
+  deleteOrderFromFirestore,
+  getPanelsFromFirestore,
+  savePanelToFirestore,
+  deletePanelFromFirestore,
+} from '@/lib/firestoreService';
 
 
 
 export default function InventoryDashboard() {
+  const { confirm, toast } = useDialog();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeSubTab, setActiveSubTab] = useState<'invoices' | 'quotations' | 'receipts'>('invoices');
   const [editDocId, setEditDocId] = useState<string | undefined>(undefined);
@@ -39,9 +50,22 @@ export default function InventoryDashboard() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [editingPanel, setEditingPanel] = useState<InventoryItem | null>(null);
 
-  const handleDeletePanel = (item: InventoryItem) => {
-    if (confirm(`Are you sure you want to delete this ${item.design} ${item.panelType} Panel?`)) {
-      setItems(prev => prev.filter(i => i.id !== item.id));
+  const handleDeletePanel = async (item: InventoryItem) => {
+    const ok = await confirm({
+      title: "Delete Panel",
+      message: `Are you sure you want to delete the ${item.design} ${item.panelType} Panel? This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (ok) {
+      try {
+        await deletePanelFromFirestore(item.id);
+        setItems(prev => prev.filter(i => i.id !== item.id));
+        toast({ message: "Panel deleted successfully.", type: "success" });
+      } catch (e) {
+        console.error("Panel delete error:", e);
+        toast({ message: "Failed to delete panel.", type: "error" });
+      }
     }
   };
 
@@ -51,16 +75,82 @@ export default function InventoryDashboard() {
   };
 
   const [orders, setOrders] = useState<OrderData[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const customers: Customer[] = [];
+
+  useEffect(() => {
+    const fetchStoredData = async () => {
+      try {
+        const [firestoreOrders, storedInvoices, panels] = await Promise.all([
+          getOrdersFromFirestore(),
+          getInvoicesFromFirestore(),
+          getPanelsFromFirestore(),
+        ]);
+        setOrders((firestoreOrders as OrderData[]) || []);
+        setInvoices(storedInvoices || []);
+        setItems((panels as InventoryItem[]) || []);
+      } catch (e) {
+        console.error("Error fetching data from Firestore:", e);
+      }
+    };
+    fetchStoredData();
+  }, [activeTab]);
 
 
 
   const totalValue = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const lowStockCount = items.filter(item => item.status === 'Low Stock' || item.status === 'Out of Stock').length;
 
-  const thisMonthRevenue = orders.reduce((acc, order) => acc + order.total, 0);
+  const thisMonthRevenue = invoices
+    .filter((inv) => inv.isFromOrder)
+    .reduce((acc, inv) => {
+      const val = inv.summary?.finalTotal !== undefined 
+        ? inv.summary.finalTotal 
+        : (inv.total !== undefined ? inv.total : 0);
+      return acc + val;
+    }, 0);
 
   const formatLKR = (amount: number) => `LKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const handleViewOrderInvoice = async (orderId: string) => {
+    try {
+      const allInvoices = await getInvoicesFromFirestore();
+      const matchingInvoice = allInvoices.find(inv => inv.orderId === orderId || inv.orderId === `ord-${orderId}`);
+      if (matchingInvoice) {
+        setEditDocId(matchingInvoice.id);
+        setIsViewOnly(true);
+        setActiveTab('edit-invoice');
+      } else {
+        toast({ message: "No corresponding invoice found for this order.", type: "error" });
+      }
+    } catch (err) {
+      console.error("Error finding order invoice:", err);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    const ok = await confirm({
+      title: "Delete Order",
+      message: "Are you sure you want to permanently delete this order? This action cannot be undone.",
+      confirmLabel: "Delete Order",
+      variant: "danger",
+    });
+    if (ok) {
+      try {
+        await deleteOrderFromFirestore(orderId);
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+        toast({ message: "Order deleted successfully.", type: "success" });
+      } catch (e) {
+        console.error("Order delete error:", e);
+        toast({ message: "Failed to delete order.", type: "error" });
+      }
+    }
+  };
+
+  const handleEditOrder = (orderId: string) => {
+    setEditDocId(orderId);
+    setActiveTab('edit-order');
+  };
 
   const getBreadcrumbs = (): { label: string; onClick?: () => void }[] => {
     switch (activeTab) {
@@ -263,7 +353,17 @@ export default function InventoryDashboard() {
         <div className="flex-1 overflow-auto p-4 md:p-8 z-10 relative scroll-smooth">
           {activeTab === 'dashboard' && <Dashboard thisMonthRevenue={thisMonthRevenue} totalValue={totalValue} lowStockCount={lowStockCount} orders={orders} items={items} setActiveTab={setActiveTab} formatLKR={formatLKR} />}
           {activeTab === 'inventory' && <Inventory items={items} searchQuery={searchQuery} setSearchQuery={setSearchQuery} setActiveTab={setActiveTab} setEditingPanel={setEditingPanel} handleEditPanelClick={handleEditPanelClick} handleDeletePanel={handleDeletePanel} formatLKR={formatLKR} />}
-          {activeTab === 'orders' && <Orders orders={orders} setActiveTab={setActiveTab} formatLKR={formatLKR} />}
+          {activeTab === 'orders' && (
+            <Orders 
+              orders={orders} 
+              invoices={invoices}
+              setActiveTab={setActiveTab} 
+              formatLKR={formatLKR} 
+              onViewInvoice={handleViewOrderInvoice}
+              onEditOrder={handleEditOrder}
+              onDeleteOrder={handleDeleteOrder}
+            />
+          )}
           {activeTab === 'customers' && <Customers customers={customers} setActiveTab={setActiveTab} />}
           {activeTab === 'reports' && <Reports />}
           {activeTab === 'documents' && (
@@ -332,19 +432,28 @@ export default function InventoryDashboard() {
           {activeTab === 'add-panel' && <AddPanel
             initialData={editingPanel ? { ...editingPanel, size: editingPanel.size || '' } : undefined}
             onBack={() => { setActiveTab('inventory'); setEditingPanel(null); }}
-            onDelete={() => {
+            onDelete={async () => {
               if (editingPanel) {
+                await deletePanelFromFirestore(editingPanel.id);
                 setItems(prev => prev.filter(i => i.id !== editingPanel.id));
                 setActiveTab('inventory');
                 setEditingPanel(null);
               }
             }}
-            onSave={(newPanel, silent = false) => {
+            onSave={async (newPanel, silent = false) => {
               const date = new Date().toISOString().split('T')[0];
-              if (editingPanel) {
-                setItems(prev => prev.map(i => i.id === editingPanel.id ? { ...newPanel, id: editingPanel.id, lastUpdated: date } as InventoryItem : i));
-              } else {
-                setItems(prev => [...prev, { ...newPanel, id: Date.now().toString(), lastUpdated: date } as InventoryItem]);
+              try {
+                if (editingPanel) {
+                  const updated = { ...newPanel, id: editingPanel.id, lastUpdated: date } as InventoryItem;
+                  await savePanelToFirestore(updated);
+                  setItems(prev => prev.map(i => i.id === editingPanel.id ? updated : i));
+                } else {
+                  const savedId = await savePanelToFirestore({ ...newPanel, lastUpdated: date });
+                  setItems(prev => [...prev, { ...newPanel, id: savedId, lastUpdated: date } as InventoryItem]);
+                }
+              } catch (e) {
+                console.error("Panel save error:", e);
+                toast({ message: "Failed to save panel.", type: "error" });
               }
 
               if (!silent) {
@@ -354,16 +463,35 @@ export default function InventoryDashboard() {
             }} />}
           {activeTab === 'add-customer' && <AddCustomer onBack={() => setActiveTab('customers')} />}
           {activeTab === 'settings' && <SettingsPage onBack={() => setActiveTab('dashboard')} />}
-          {activeTab === 'add-order' && <AddOrder
-            inventory={items}
-            customers={customers}
-            onBack={() => setActiveTab('orders')}
-            onSave={(newOrder) => {
-              setOrders(prev => [{ ...newOrder, id: Date.now().toString(), timestamp: new Date().toISOString() } as OrderData, ...prev]);
-              setActiveTab('orders');
-              alert("Order saved successfully!");
-            }}
-          />}
+          {(activeTab === 'add-order' || activeTab === 'edit-order') && (
+            <AddOrder
+              editId={editDocId}
+              inventory={items}
+              customers={customers}
+              onBack={() => {
+                setActiveTab('orders');
+                setEditDocId(undefined);
+              }}
+              onSave={async (savedOrder) => {
+                try {
+                  if (editDocId) {
+                    await saveOrderToFirestore({ ...savedOrder, id: editDocId });
+                    setOrders(prev => prev.map(o => o.id === editDocId ? { ...savedOrder, id: editDocId } as OrderData : o));
+                    toast({ message: "Order updated successfully!", type: "success" });
+                  } else {
+                    const newId = await saveOrderToFirestore({ ...savedOrder, timestamp: savedOrder.timestamp || new Date().toISOString() });
+                    setOrders(prev => [{ ...savedOrder, id: newId } as OrderData, ...prev]);
+                    toast({ message: "Order saved successfully!", type: "success" });
+                  }
+                  setActiveTab('orders');
+                  setEditDocId(undefined);
+                } catch (e) {
+                  console.error("Failed to save order:", e);
+                  toast({ message: "Failed to save order. Please try again.", type: "error" });
+                }
+              }}
+            />
+          )}
         </div>
       </main>
     </div>

@@ -24,6 +24,7 @@ export interface OrderLineItem {
 
 export interface OrderData {
   id?: string;
+  invoiceNo?: string;
   customer: string;
   date: string;
   items: number;

@@ -1,261 +1,1189 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+"use client";
 
-
+import React, { useState, useEffect, Suspense } from 'react';
+import { ArrowLeft, Save, Plus, Trash2, Loader2, X } from 'lucide-react';
 import { InventoryItem, OrderData, Customer } from '../types';
+import { exportToPDF, exportToPrinter } from "@/lib/pdf";
+import {
+  saveInvoiceToFirestore,
+  getNextDocumentNumber,
+  getInvoicesFromFirestore
+} from "@/lib/documentStorage";
+import { useSettingsStore } from "@/lib/settingsStore";
+import { useDialog } from './Dialog';
+import { getOrdersFromFirestore } from '@/lib/firestoreService';
+
+interface LineItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  category?: string;
+  size?: string;
+  unit?: string;
+  groupTitle?: string;
+  discount?: number; // Represented as percentage (e.g. 10 for 10% discount)
+}
 
 interface AddOrderProps {
   onBack: () => void;
   onSave: (order: OrderData) => void;
   inventory: InventoryItem[];
   customers: Customer[];
+  editId?: string;
 }
 
-export default function AddOrder({ onBack, onSave, inventory }: AddOrderProps) {
-  const [formData, setFormData] = useState<OrderData>({
-    customer: '',
-    date: new Date().toISOString().split('T')[0],
-    items: 0,
-    total: 0,
-    status: 'Pending',
-    lineItems: [],
-    deliveryFee: 15000
-  });
+export default function AddOrder({ onBack, onSave, inventory, customers, editId }: AddOrderProps) {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#E8973A]" /></div>}>
+      <OrderEditor onBack={onBack} onSave={onSave} inventory={inventory} customers={customers} editId={editId} />
+    </Suspense>
+  );
+}
 
-  const handleAddLineItem = () => {
-    setFormData(prev => ({
-      ...prev,
-      lineItems: [
-        ...prev.lineItems,
-        { inventoryId: '', name: '', quantity: 1, price: 0, total: 0 }
-      ]
-    }));
+function OrderEditor({ onBack, onSave, inventory, customers, editId }: { onBack: () => void; onSave: (order: OrderData) => void; inventory: InventoryItem[]; customers: Customer[]; editId?: string }) {
+  const settings = useSettingsStore();
+  const LINE_ITEM_PRESETS = settings.presets;
+  const company = settings.company;
+  const bankDetails = settings.bankDetails;
+  const terms = settings.terms;
+
+  const [title, setTitle] = useState("INVOICE");
+  const [invoiceNo, setInvoiceNo] = useState("");
+  const [clientName, setClientName] = useState("");
+  const [clientContactNumber, setClientContactNumber] = useState("");
+  const [clientAddress, setClientAddress] = useState("");
+  const [issueDate, setIssueDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [dueDate, setDueDate] = useState(
+    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  );
+  const [items, setItems] = useState<LineItem[]>([
+    { description: "", quantity: 1, unitPrice: 0, category: "wall", groupTitle: "Walls", unit: "Sqft", discount: 0 },
+  ]);
+  const [pricingMode, setPricingMode] = useState<"simple" | "hard">("simple");
+  const [notes, setNotes] = useState("");
+  const [preparedBy, setPreparedBy] = useState("");
+  const [orderType, setOrderType] = useState<"with_construction" | "panels_only">("with_construction");
+  const [showPreview, setShowPreview] = useState(false);
+  const [enableDiscounts, setEnableDiscounts] = useState(false);
+  const [invoiceType, setInvoiceType] = useState<"normal" | "cash">("normal");
+  const [status, setStatus] = useState<OrderData['status']>("Pending");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleInvoiceTypeChange = (type: "normal" | "cash") => {
+    setInvoiceType(type);
+
+    let count = 1;
+    const match = invoiceNo.match(/\d+$/);
+    if (match) {
+      count = parseInt(match[0], 10);
+    }
+
+    if (type === "cash") {
+      setTitle("CASH INVOICE");
+      setInvoiceNo(`A000${count}`);
+    } else {
+      setTitle("INVOICE");
+      const yearShort = new Date().getFullYear().toString().slice(-2);
+      const countStr = count.toString().padStart(3, "0");
+      setInvoiceNo(`# ${yearShort} - ${countStr}`);
+    }
   };
 
-  const handleRemoveLineItem = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      lineItems: prev.lineItems.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleLineItemChange = (index: number, field: string, value: string | number) => {
-    const newItems = [...formData.lineItems];
-    const item = newItems[index];
-
-    if (field === 'inventoryId') {
-      const invItem = inventory.find(i => i.id === value);
-      item.inventoryId = value as string;
-      if (invItem) {
-        item.name = `${invItem.design} ${invItem.panelType} Panel ${invItem.size ? `(${invItem.size})` : ''}`;
-        item.price = invItem.price;
+  useEffect(() => {
+    const loadOrderData = async () => {
+      if (editId) {
+        setIsLoading(true);
+        try {
+          const [orders, storedInvoices] = await Promise.all([
+            getOrdersFromFirestore(),
+            getInvoicesFromFirestore(),
+          ]);
+          const orderToEdit = orders.find((o: any) => o.id === editId);
+          if (orderToEdit) {
+            const invoiceToEdit = storedInvoices.find((i: any) => i.orderId === editId);
+            if (invoiceToEdit) {
+              setTitle(invoiceToEdit.title);
+              setInvoiceNo(invoiceToEdit.invoiceNo);
+              setClientName(invoiceToEdit.clientName);
+              setClientContactNumber(invoiceToEdit.clientContactNumber);
+              setClientAddress(invoiceToEdit.clientAddress);
+              setIssueDate(invoiceToEdit.issueDate);
+              setDueDate(invoiceToEdit.dueDate);
+              setPricingMode(invoiceToEdit.pricingMode);
+              setNotes(invoiceToEdit.notes || '');
+              setPreparedBy(invoiceToEdit.preparedBy || '');
+              setOrderType(invoiceToEdit.orderType || 'with_construction');
+              setEnableDiscounts(invoiceToEdit.enableDiscounts ?? true);
+              setInvoiceType(invoiceToEdit.invoiceType || 'normal');
+              setItems(invoiceToEdit.items || []);
+              setStatus((orderToEdit as any).status || 'Pending');
+            }
+          }
+        } catch (e) {
+          console.error("Error loading order for edit:", e);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        const fetchNextNum = async () => {
+          const nextVal = await getNextDocumentNumber("invoice");
+          setInvoiceNo(nextVal);
+        };
+        fetchNextNum();
       }
-    } else if (field === 'quantity') {
-      item.quantity = Number(value);
-    } else if (field === 'price') {
-      item.price = Number(value);
-    }
-
-    item.total = item.quantity * item.price;
-    newItems[index] = item;
-    
-    setFormData(prev => ({ ...prev, lineItems: newItems }));
-  };
-
-  const calculateSubtotal = () => {
-    return formData.lineItems.reduce((acc, item) => acc + item.total, 0);
-  };
-
-  const calculateTotalQty = () => {
-    return formData.lineItems.reduce((acc, item) => acc + item.quantity, 0);
-  };
-
-  const handleSave = () => {
-    if (!formData.customer) {
-      alert("Please select a customer.");
-      return;
-    }
-    if (formData.lineItems.length === 0 || !formData.lineItems[0].inventoryId) {
-      alert("Please add at least one valid item to the order.");
-      return;
-    }
-
-    const subtotal = calculateSubtotal();
-    const finalData: OrderData = {
-      ...formData,
-      items: calculateTotalQty(),
-      total: subtotal + formData.deliveryFee
     };
+    loadOrderData();
+  }, [editId]);
 
-    onSave(finalData);
+  const addItem = () => {
+    setItems([...items, { description: "", quantity: 1, unitPrice: 0, category: "custom", groupTitle: "Custom Works", unit: "Item", discount: 0 }]);
   };
 
-  const subtotal = calculateSubtotal();
-  const finalTotal = subtotal + formData.deliveryFee;
+  const removeItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
 
-  const formatLKR = (amount: number) => `LKR ${amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+  const updateItem = (index: number, fieldOrUpdates: keyof LineItem | Partial<LineItem>, value?: any) => {
+    setItems((prevItems) => {
+      const newItems = [...prevItems];
+      if (typeof fieldOrUpdates === "object") {
+        newItems[index] = { ...newItems[index], ...fieldOrUpdates };
+      } else {
+        newItems[index] = { ...newItems[index], [fieldOrUpdates as any]: value };
+      }
+      return newItems;
+    });
+  };
+
+  const calculateTotal = () => {
+    return items.reduce((sum, item) => sum + (item.quantity * item.unitPrice) * (1 - (item.discount || 0) / 100), 0);
+  };
+
+  const calculateUndiscountedSubtotal = () => {
+    return items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  };
+
+  const { toast } = useDialog();
+
+  const handleSave = async () => {
+    if (!clientName) {
+      toast({ message: 'Please enter a client name.', type: 'error' });
+      return;
+    }
+    if (items.length === 0 || (!items[0].description && !items[0].groupTitle)) {
+      toast({ message: 'Please add at least one valid item to the order.', type: 'error' });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const orderId = editId || `ord-${Date.now()}`;
+      const storedInvoices = await getInvoicesFromFirestore();
+      const existingInv = editId ? storedInvoices.find((i: any) => i.orderId === editId) : null;
+      const invoiceId = existingInv ? existingInv.id : `inv-${Date.now()}`;
+
+      // 1. Save corresponding Invoice to local storage
+      const invoiceData = {
+        id: invoiceId,
+        orderId: orderId,
+        isFromOrder: true,
+        title,
+        invoiceNo,
+        clientName,
+        clientContactNumber,
+        clientAddress,
+        issueDate,
+        dueDate,
+        pricingMode,
+        notes,
+        preparedBy,
+        orderType,
+        enableDiscounts,
+        invoiceType,
+        items,
+        summary: {
+          subtotal: undiscountedSubtotal,
+          totalDiscount,
+          finalTotal: total
+        }
+      };
+
+      await saveInvoiceToFirestore(invoiceData);
+
+      // 2. Prepare Order Data
+      const totalQty = items.reduce((acc, item) => acc + item.quantity, 0);
+      const finalOrderData: OrderData = {
+        id: orderId,
+        invoiceNo: invoiceNo,
+        customer: clientName,
+        date: issueDate,
+        items: totalQty,
+        total: total,
+        status: status,
+        lineItems: items.map(item => ({
+          inventoryId: item.category || 'custom',
+          name: item.description || item.groupTitle || 'Item',
+          quantity: item.quantity,
+          price: item.unitPrice,
+          total: item.quantity * item.unitPrice * (1 - (item.discount || 0) / 100)
+        })),
+        deliveryFee: 0,
+        timestamp: new Date().toISOString()
+      };
+
+      onSave(finalOrderData);
+    } catch (err) {
+      console.error("Save error:", err);
+      toast({ message: 'Error saving order and invoice. Please try again.', type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    await exportToPDF("invoice-preview", `${invoiceNo}.pdf`);
+    await handleSave();
+  };
+
+  const handleDirectPrint = async () => {
+    await exportToPrinter("invoice-preview");
+    await handleSave();
+  };
+
+  const total = calculateTotal();
+  const undiscountedSubtotal = calculateUndiscountedSubtotal();
+  const totalDiscount = undiscountedSubtotal - total;
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-[#E8973A]" />
+          <p className="text-gray-500 text-sm font-medium">Creating Order & Invoice...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={onBack}
-            className="p-2 hover:bg-white rounded-full transition-colors text-gray-500 hover:text-gray-900"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold">Create New Order</h2>
-            <p className="text-gray-500 text-sm">Draft a new sales order for a customer</p>
-          </div>
-        </div>
-        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 font-medium transition-all shadow-lg shadow-[#E8973A]/20">
-          <Save className="w-4 h-4" /> Save Order
-        </button>
-      </div>
+    <div className="flex min-h-screen flex-col font-sans">
+      <main className="flex-1 pb-20">
+        <div className="mx-auto w-full max-w-7xl px-2 sm:px-4 md:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column: Details */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
-            <h3 className="text-lg font-medium border-b border-gray-200 pb-4 mb-4">Order Details</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-500">Customer</label>
-                <input 
-                  type="text"
-                  placeholder="Enter customer name..."
-                  value={formData.customer}
-                  onChange={(e) => setFormData({...formData, customer: e.target.value})}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-500">Order Date</label>
-                <input 
-                  type="date" 
-                  value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all [color-scheme:dark]" 
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
-              <h3 className="text-lg font-medium">Order Items</h3>
-              <button onClick={handleAddLineItem} className="flex items-center gap-2 text-sm text-[#E8973A] hover:text-[#E8973A]">
-                <Plus className="w-4 h-4" /> Add Item
+            {/* <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                className="flex-1 sm:flex-initial px-4 py-2.5 rounded-lg border border-gray-200 hover:bg-white text-gray-700 font-medium transition-all text-sm flex items-center justify-center gap-1.5"
+              >
+                Preview Invoice
               </button>
-            </div>
-            
-            <div className="space-y-4">
-              {formData.lineItems.length === 0 && (
-                <div className="text-center py-8 text-gray-500 text-sm">
-                  No items added yet. Click &quot;Add Item&quot; to start.
-                </div>
-              )}
-              {formData.lineItems.map((item, index) => (
-                <div key={index} className="flex flex-col md:flex-row md:items-end gap-4 p-3 bg-white rounded-xl border border-gray-200 relative group">
-                  <div className="flex-1 space-y-2">
-                    <label className="text-xs text-gray-500">Panel</label>
-                    <select 
-                      value={item.inventoryId}
-                      onChange={(e) => handleLineItemChange(index, 'inventoryId', e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900"
+              <button
+                onClick={handleSave}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 font-bold transition-all shadow-lg shadow-[#E8973A]/20 text-sm cursor-pointer"
+              >
+                <Save className="w-4 h-4" /> Save Order
+              </button>
+            </div> */}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Form Column */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-6 sticky top-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-6">
+                  Order & Invoice Info
+                </h2>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Order Status
+                    </label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as OrderData['status'])}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900"
                     >
-                      <option value="">Select Panel...</option>
-                      {inventory.map((inv) => (
-                        <option key={inv.id} value={inv.id}>
-                          {inv.design} {inv.panelType} {inv.size ? `(${inv.size})` : ''}
-                        </option>
-                      ))}
+                      <option value="Pending">Pending</option>
+                      <option value="Processing">Processing</option>
+                      <option value="Delivered">Delivered</option>
                     </select>
                   </div>
-                  <div className="w-full md:w-20 space-y-2">
-                    <label className="text-xs text-gray-500">Qty</label>
-                    <input 
-                      type="number" 
-                      value={item.quantity || ''}
-                      onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 text-right" 
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Invoice Type
+                    </label>
+                    <select
+                      value={invoiceType}
+                      onChange={(e) => handleInvoiceTypeChange(e.target.value as "normal" | "cash")}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900"
+                    >
+                      <option value="normal">Normal Invoice</option>
+                      <option value="cash">Cash Invoice</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Invoice #
+                    </label>
+                    <input
+                      type="text"
+                      value={invoiceNo}
+                      onChange={(e) => setInvoiceNo(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900"
                     />
                   </div>
-                  <div className="w-full md:w-28 space-y-2">
-                    <label className="text-xs text-gray-500">Price/Sqft</label>
-                    <input 
-                      type="number" 
-                      value={item.price || ''}
-                      onChange={(e) => handleLineItemChange(index, 'price', e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 text-right" 
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Client Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900"
                     />
                   </div>
-                  <div className="w-full md:w-32 space-y-2">
-                    <label className="text-xs text-gray-500">Total (LKR)</label>
-                    <input type="text" readOnly value={item.total.toLocaleString()} className="w-full px-3 py-2 bg-[#E8973A]/10 border border-[#E8973A]/20 rounded-lg text-sm text-[#E8973A] font-medium text-right" />
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Client Contact Number
+                    </label>
+                    <input
+                      type="number"
+                      value={clientContactNumber}
+                      onChange={(e) => setClientContactNumber(e.target.value)}
+                      onWheel={(e) => e.currentTarget.blur()}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900"
+                    />
                   </div>
-                  <button 
-                    onClick={() => handleRemoveLineItem(index)}
-                    className="absolute -right-2 -top-2 p-1.5 bg-gray-900/5 text-gray-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-900/10"
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Client Address
+                    </label>
+                    <textarea
+                      value={clientAddress}
+                      onChange={(e) => setClientAddress(e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all resize-none text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Issue Date
+                    </label>
+                    <input
+                      type="date"
+                      value={issueDate}
+                      onChange={(e) => setIssueDate(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Document Title
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="e.g. INVOICE"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Notes
+                    </label>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all resize-none text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Prepared By
+                    </label>
+                    <input
+                      type="text"
+                      value={preparedBy}
+                      onChange={(e) => setPreparedBy(e.target.value)}
+                      placeholder="e.g. Sales Team / Your Name"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Order Type (Payment Terms)
+                    </label>
+                    <select
+                      value={orderType}
+                      onChange={(e) => setOrderType(e.target.value as "with_construction" | "panels_only")}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900"
+                    >
+                      <option value="with_construction">With Construction (80% advance)</option>
+                      <option value="panels_only">Panels Only (No Construction) (100% advance)</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPreview(true)}
+                    className="hidden lg:block w-full bg-[#E8973A] hover:bg-[#d4832b] text-white font-semibold py-2.5 px-4 rounded-xl transition shadow-lg shadow-[#E8973A]/10 active:scale-[0.98]"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    Preview & Export Invoice
                   </button>
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Right Column: Summary */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 backdrop-blur-sm shadow-xl h-fit sticky top-24">
-          <h3 className="text-lg font-medium border-b border-gray-200 pb-4 mb-4">Summary</h3>
-          
-          <div className="space-y-3 mb-6">
-            <div className="flex justify-between text-gray-500 text-sm">
-              <span>Subtotal</span>
-              <span>{formatLKR(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-gray-500 text-sm">
-              <span>Tax (0%)</span>
-              <span>LKR 0.00</span>
-            </div>
-            <div className="flex justify-between text-gray-500 text-sm items-center">
-              <span>Delivery</span>
-              <div className="flex items-center gap-1 w-24">
-                <span className="text-xs">Rs.</span>
-                <input 
-                  type="number" 
-                  value={formData.deliveryFee || ''}
-                  onChange={(e) => setFormData({...formData, deliveryFee: Number(e.target.value)})}
-                  className="w-full px-2 py-1 bg-gray-50 border border-gray-200 rounded text-right text-sm"
-                />
+            {/* Items Column */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-xl font-bold text-gray-800">
+                      Line Items
+                    </h2>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#E8973A] bg-[#E8973A]/5 hover:bg-[#E8973A]/10 px-3 py-1.5 rounded-xl border border-[#E8973A]/20 transition select-none">
+                      <input
+                        type="checkbox"
+                        checked={enableDiscounts}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setEnableDiscounts(val);
+                          if (!val) {
+                            setItems(items.map(item => ({ ...item, discount: 0 })));
+                          }
+                        }}
+                        className="accent-[#E8973A] h-3.5 w-3.5 rounded"
+                      />
+                      <span>Apply Discounts</span>
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2 bg-gray-150 p-1.5 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setPricingMode("simple")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 ${pricingMode === "simple"
+                        ? "bg-white text-gray-800 shadow-sm border border-gray-250"
+                        : "text-gray-500 hover:text-gray-800"
+                        }`}
+                    >
+                      Sqft
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPricingMode("hard")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 ${pricingMode === "hard"
+                        ? "bg-white text-gray-800 shadow-sm border border-gray-250"
+                        : "text-gray-500 hover:text-gray-800"
+                        }`}
+                    >
+                      Panel-by-Panel
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4 mb-4">
+                  {items.map((item, index) => {
+                    const activeCat = item.category || "wall";
+                    return (
+                      <div key={index} className="p-4 bg-gray-50/50 rounded-xl border border-gray-100 flex flex-col gap-3.5 w-full">
+                        {/* Row 1: Component Type buttons */}
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Component Type</label>
+                          <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg max-w-md">
+                            {["wall", "ceiling", "roofing", "custom"].map((cat) => {
+                              const label = cat === "wall" ? "Wall" : cat === "ceiling" ? "Ceiling" : cat === "roofing" ? "Roofing" : "Custom";
+                              return (
+                                <button
+                                  key={cat}
+                                  type="button"
+                                  onClick={() => {
+                                    const groupTitle = cat === "wall" ? "Walls" : cat === "ceiling" ? "Roof & Ceilling" : cat === "roofing" ? "Roofing" : "Custom Works";
+                                    const unit = cat === "custom" ? "Item" : "Sqft";
+                                    if (cat === "custom") {
+                                      updateItem(index, {
+                                        category: "custom",
+                                        groupTitle,
+                                        unit,
+                                        size: "",
+                                        description: "",
+                                        unitPrice: 0,
+                                        discount: 0
+                                      });
+                                    } else {
+                                      const catLabel = cat === "wall" ? "Wall Panels" : cat === "ceiling" ? "Ceiling Panels" : "Roofing Panels";
+                                      const options = LINE_ITEM_PRESETS.filter(p => p.category === catLabel && (p.mode === pricingMode || p.mode === "all"));
+                                      const defaultOpt = options[0];
+                                      if (defaultOpt) {
+                                        updateItem(index, {
+                                          category: cat,
+                                          groupTitle,
+                                          unit,
+                                          size: defaultOpt.value,
+                                          description: "",
+                                          unitPrice: defaultOpt.price,
+                                          discount: 0
+                                        });
+                                      } else {
+                                        updateItem(index, {
+                                          category: cat,
+                                          groupTitle,
+                                          unit,
+                                          size: "",
+                                          description: "",
+                                          unitPrice: 0,
+                                          discount: 0
+                                        });
+                                      }
+                                    }
+                                  }}
+                                  className={`flex-1 min-w-[60px] px-2.5 py-1 rounded-md text-xs font-semibold transition-all duration-150 ${activeCat === cat
+                                    ? "bg-white text-gray-800 shadow-sm font-bold"
+                                    : "text-gray-500 hover:text-gray-800"
+                                    }`}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Row 1.5: Group Title customization */}
+                        <div className="w-full">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Group Header / Category Name</label>
+                          {activeCat !== "custom" ? (
+                            <select
+                              value={item.groupTitle || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const selected = LINE_ITEM_PRESETS.find(p => p.label === val || p.value === val);
+                                if (selected) {
+                                  updateItem(index, {
+                                    groupTitle: selected.label,
+                                    size: selected.value,
+                                    description: "",
+                                    unitPrice: selected.price
+                                  });
+                                } else {
+                                  updateItem(index, "groupTitle", val);
+                                }
+                              }}
+                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm text-gray-900 font-normal"
+                            >
+                              <option value="">Select Option...</option>
+                              {(() => {
+                                const catLabel = activeCat === "wall" ? "Wall Panels" : activeCat === "ceiling" ? "Ceiling Panels" : "Roofing Panels";
+                                return LINE_ITEM_PRESETS.filter(
+                                  (preset) => preset.category === catLabel && (preset.mode === pricingMode || preset.mode === "all")
+                                ).map((preset, pIdx) => (
+                                  <option key={pIdx} value={preset.label}>
+                                    {preset.label}
+                                  </option>
+                                ));
+                              })()}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              placeholder="e.g. Custom Works, Doors, Windows..."
+                              value={item.groupTitle || ""}
+                              onChange={(e) => updateItem(index, "groupTitle", e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm text-gray-900 font-normal"
+                            />
+                          )}
+                        </div>
+
+                        {/* Row 2: Pricing Boxes Inline */}
+                        <div className="flex flex-col md:flex-row gap-3.5 md:items-end w-full">
+                          {activeCat === "custom" && (
+                            <div className="flex-1 md:w-20">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Unit</label>
+                              <select
+                                value={item.unit || "Item"}
+                                onChange={(e) => updateItem(index, "unit", e.target.value)}
+                                className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-normal text-gray-900 h-[42px]"
+                              >
+                                <option value="Item">Item</option>
+                                <option value="Sqft">Sqft</option>
+                                <option value="Nos">Nos</option>
+                                <option value="Transport">Transport</option>
+                              </select>
+                            </div>
+                          )}
+                          <div className={`flex-1 ${enableDiscounts ? "md:w-16" : "md:w-24"}`}>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Qty</label>
+                            <input
+                              type="number"
+                              placeholder="Qty"
+                              value={item.quantity === 0 ? "" : item.quantity}
+                              onChange={(e) => updateItem(index, "quantity", parseFloat(e.target.value) || 0)}
+                              onFocus={(e) => e.target.select()}
+                              onWheel={(e) => e.currentTarget.blur()}
+                              className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-normal text-center text-gray-900"
+                            />
+                          </div>
+
+                          <div className={`flex-1 ${enableDiscounts ? "md:w-24" : "md:w-32"}`}>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Rate (Rs.)</label>
+                            <input
+                              type="number"
+                              placeholder="Price"
+                              value={item.unitPrice === 0 ? "" : item.unitPrice}
+                              onChange={(e) => updateItem(index, "unitPrice", parseFloat(e.target.value) || 0)}
+                              onFocus={(e) => e.target.select()}
+                              onWheel={(e) => e.currentTarget.blur()}
+                              className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-normal text-right text-gray-900"
+                            />
+                          </div>
+
+                          {enableDiscounts && (
+                            <div className="flex-1 md:w-20 animate-in fade-in duration-100">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Disc (%)</label>
+                              <input
+                                type="number"
+                                placeholder="0"
+                                min="0"
+                                max="100"
+                                value={item.discount === 0 || !item.discount ? "" : item.discount}
+                                onChange={(e) => updateItem(index, "discount", parseFloat(e.target.value) || 0)}
+                                onFocus={(e) => e.target.select()}
+                                onWheel={(e) => e.currentTarget.blur()}
+                                className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-normal text-center text-gray-900"
+                              />
+                            </div>
+                          )}
+
+                          <div className={`flex-1 ${enableDiscounts ? "md:w-28" : "md:w-36"}`}>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Subtotal</label>
+                            <div className="w-full px-3 py-2.5 bg-gray-100 rounded-lg text-sm font-bold text-gray-700 text-right h-[42px] flex items-center justify-end">
+                              Rs. {((item.quantity * item.unitPrice) * (1 - (item.discount || 0) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          </div>
+
+                          {items.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeItem(index)}
+                              className="px-3.5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-150 text-sm font-semibold h-[42px] flex items-center justify-center border border-transparent shadow-sm active:scale-[0.98]"
+                              title="Remove item"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Row 3: Description Textarea */}
+                        <div className="w-full">
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Description</label>
+                          <textarea
+                            placeholder={activeCat === "custom" ? "Type custom description..." : "Add details or customize description..."}
+                            value={item.description}
+                            onChange={(e) => updateItem(index, "description", e.target.value)}
+                            rows={2}
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-normal text-gray-900 resize-y"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={addItem}
+                  className="mb-6 px-4 py-2.5 bg-[#E8973A] hover:bg-[#d4832b] text-white rounded-xl transition text-sm font-semibold flex items-center gap-1.5 shadow-sm active:scale-[0.98]"
+                >
+                  + Add Item
+                </button>
+
+                {/* Total */}
+                <div className="border-t border-gray-100 pt-4 flex justify-end">
+                  <div className="w-64 space-y-2">
+                    <div className="flex justify-between text-gray-500 text-sm font-semibold">
+                      <span>Subtotal:</span>
+                      <span>Rs. {undiscountedSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    {enableDiscounts && totalDiscount > 0 && (
+                      <div className="flex justify-between text-red-600 text-sm font-semibold">
+                        <span>Discount:</span>
+                        <span>-Rs. {totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-lg font-semibold text-gray-900 pt-2 border-t border-gray-100">
+                      <span>Total:</span>
+                      <span>Rs. {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
-            <span className="font-medium text-gray-900">Total</span>
-            <span className="text-2xl font-bold text-[#E8973A]">{formatLKR(finalTotal)}</span>
+          {/* Mobile buttons */}
+          <div className="mt-8 lg:hidden px-2 space-y-3">
+            <button
+              type="button"
+              onClick={() => setShowPreview(true)}
+              className="w-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-3.5 px-4 rounded-xl transition shadow-md active:scale-[0.98] text-base flex justify-center items-center"
+            >
+              Preview Invoice
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="w-full bg-[#E8973A] hover:bg-[#d4832b] text-white font-bold py-3.5 px-4 rounded-xl transition shadow-lg shadow-[#E8973A]/20 active:scale-[0.98] text-base flex justify-center items-center"
+            >
+              Save Order
+            </button>
           </div>
 
-          <div className="mt-8 space-y-2">
-            <label className="text-sm font-medium text-gray-500">Status</label>
-            <select 
-              value={formData.status}
-              onChange={(e) => setFormData({...formData, status: e.target.value as OrderData['status']})}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all appearance-none"
-            >
-              <option value="Pending">Pending</option>
-              <option value="Processing">Processing</option>
-              <option value="Delivered">Delivered</option>
-            </select>
+        </div>
+      </main>
+
+      {/* Preview Dialog Modal */}
+      {showPreview && (
+        <div className="fixed inset-y-0 right-0 left-0 md:left-64 z-[100] bg-black/60 backdrop-blur-sm flex justify-center items-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="p-4 bg-gray-50 border-b border-gray-150 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+              <div>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">PDF Invoice Export Preview</span>
+                <h3 className="text-base font-extrabold text-gray-800">{invoiceNo}.pdf</h3>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <button
+                  onClick={handleExportPDF}
+                  className="flex-1 sm:flex-initial px-5 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl transition-all duration-150 font-bold text-xs uppercase tracking-wider shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Save PDF
+                </button>
+                <button
+                  onClick={handleDirectPrint}
+                  className="flex-1 sm:flex-initial px-5 py-2.5 bg-gradient-to-r from-[#E8973A] to-[#d4832b] hover:from-[#d4832b] hover:to-[#be7221] text-white rounded-xl transition-all duration-150 font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Print Now
+                </button>
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="flex-1 sm:flex-initial px-5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-xl transition-all duration-150 font-bold text-xs uppercase tracking-wider active:scale-[0.98]"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-gray-100 p-6 md:p-12 flex justify-center items-start">
+              <div id="invoice-preview" className="shadow-2xl rounded-sm bg-white">
+                <InvoicePreview
+                  title={title}
+                  pricingMode={pricingMode}
+                  invoiceNo={invoiceNo}
+                  clientName={clientName}
+                  clientContactNumber={clientContactNumber}
+                  clientAddress={clientAddress}
+                  issueDate={issueDate}
+                  dueDate={dueDate}
+                  items={items}
+                  notes={notes}
+                  total={total}
+                  undiscountedSubtotal={undiscountedSubtotal}
+                  totalDiscount={totalDiscount}
+                  company={company}
+                  bankDetails={bankDetails}
+                  terms={terms}
+                  preparedBy={preparedBy}
+                  orderType={orderType}
+                  enableDiscounts={enableDiscounts}
+                  invoiceType={invoiceType}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface InvoicePreviewProps {
+  title: string;
+  pricingMode: "simple" | "hard";
+  invoiceNo: string;
+  clientName: string;
+  clientContactNumber: string;
+  clientAddress: string;
+  issueDate: string;
+  dueDate: string;
+  items: LineItem[];
+  notes: string;
+  total: number;
+  undiscountedSubtotal: number;
+  totalDiscount: number;
+  company: any;
+  bankDetails: any[];
+  terms: any;
+  preparedBy?: string;
+  orderType?: "with_construction" | "panels_only";
+  enableDiscounts: boolean;
+  invoiceType?: "normal" | "cash";
+}
+
+function InvoicePreview({
+  title,
+  pricingMode,
+  invoiceNo,
+  clientName,
+  clientContactNumber,
+  clientAddress,
+  issueDate,
+  dueDate,
+  items,
+  notes,
+  total,
+  undiscountedSubtotal,
+  totalDiscount,
+  company,
+  bankDetails,
+  terms,
+  preparedBy,
+  orderType,
+  enableDiscounts,
+  invoiceType,
+}: InvoicePreviewProps) {
+  return (
+    <div className="w-[210mm] min-h-[297mm] p-10 text-sm text-black font-medium bg-white relative flex flex-col mx-auto font-sans box-border select-none">
+      <div className="flex-1 flex flex-col">
+        {/* Header Section */}
+        <div className="flex justify-between items-start w-full mb-4">
+          <div className="w-[140px]">
+            <img
+              src="/Japan-Gedara-Logo-removebg-preview.png"
+              alt="Logo"
+              className="w-32 h-auto"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
+          <div className="flex flex-col items-end text-right flex-1">
+            <span className="text-base font-bold text-black mb-1">
+              {company.name.toUpperCase()}
+            </span>
+            <span className="text-[10px] text-black max-w-[200px] leading-tight mb-1">
+              {company.address}
+            </span>
+            <span className="text-base font-extrabold text-black uppercase tracking-wider mt-4">
+              {invoiceType === "cash" ? "CASH INVOICE" : "INVOICE"}
+            </span>
           </div>
         </div>
 
+        {/* Divider */}
+        <div className="h-[2px] bg-black mb-6 w-full rounded-full" />
+
+        {/* Client & Meta Info */}
+        <div className="flex mb-8 w-full">
+          <div className="flex-1">
+            <div className="flex mb-1 items-center">
+              <span className="font-bold w-[90px] text-[10px] text-black">DATE:</span>
+              <span className="text-[10px] text-black">{new Date(issueDate).toLocaleDateString()}</span>
+            </div>
+            <div className="flex mb-1 items-center">
+              <span className="font-bold w-[90px] text-[10px] text-black">INVOICE NO:</span>
+              <span className="text-[10px] text-black">{invoiceNo}</span>
+            </div>
+            <div className="flex mb-1 items-center">
+              <span className="font-bold w-[90px] text-[10px] text-black">DUE DATE:</span>
+              <span className="text-[10px] text-black">{new Date(dueDate).toLocaleDateString()}</span>
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex mb-1 items-center">
+              <span className="font-bold w-[90px] text-[10px] text-black">NAME:</span>
+              <span className="text-[10px] text-black flex-1">{clientName || "Valued Customer"}</span>
+            </div>
+            <div className="flex mb-1 items-center">
+              <span className="font-bold w-[90px] text-[10px] text-black">ADDRESS:</span>
+              <span className="text-[10px] text-black flex-1">{clientAddress || "Not Specified"}</span>
+            </div>
+            <div className="flex mb-1 items-center">
+              <span className="font-bold w-[120px] text-[10px] text-black">CONTACT NUMBER:</span>
+              <span className="text-[10px] text-black flex-1">{clientContactNumber || "Not Specified"}</span>
+            </div>
+          </div>
+        </div>
+
+        <span className="block text-xs font-semibold text-black mb-3">
+          TITLE: {title || "INVOICE"}
+        </span>
+
+        {/* Materials Table */}
+        <div className="mb-5">
+          <table style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            border: "1.5px solid #000000",
+            fontFamily: "Arial, sans-serif",
+            fontSize: "11px",
+            color: "#000000",
+          }}>
+            <thead>
+              <tr style={{ borderBottom: "1.5px solid #000000", backgroundColor: "#FFFFFF" }}>
+                <th style={{ border: "1px solid #000000", padding: "6px 4px", textAlign: "center", fontWeight: "bold", width: "6%" }}>ITEM</th>
+                <th style={{ border: "1px solid #000000", padding: "6px 8px", textAlign: "left", fontWeight: "bold", width: enableDiscounts ? "46%" : "54%" }}>DESCRIPTION</th>
+                <th style={{ border: "1px solid #000000", padding: "6px 4px", textAlign: "center", fontWeight: "bold", width: "8%" }}>UNIT</th>
+                <th style={{ border: "1px solid #000000", padding: "6px 4px", textAlign: "center", fontWeight: "bold", width: "8%" }}>QTY</th>
+                <th style={{ border: "1px solid #000000", padding: "6px 4px", textAlign: "right", fontWeight: "bold", width: enableDiscounts ? "10%" : "12%" }}>RATE (Rs.)</th>
+                {enableDiscounts && (
+                  <th style={{ border: "1px solid #000000", padding: "6px 4px", textAlign: "center", fontWeight: "bold", width: "10%" }}>DISC (%)</th>
+                )}
+                <th style={{ border: "1px solid #000000", padding: "6px 4px", textAlign: "right", fontWeight: "bold", width: "12%" }}>AMOUNT (Rs.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item, index) => {
+                const groupHeader = item.groupTitle || (
+                  item.category === "wall" ? "Walls" :
+                    item.category === "ceiling" ? "Roof & Ceilling" :
+                      item.category === "roofing" ? "Roofing" : "Custom Works"
+                );
+                const itemUnit = item.category === "custom" ? (item.unit || "Item") : (pricingMode === "simple" ? "Sqft" : "Nos");
+                const displayQty = (itemUnit.toLowerCase() === "item" && (item.quantity === 1 || item.quantity === 0))
+                  ? ""
+                  : item.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+                return (
+                  <React.Fragment key={index}>
+                    {/* Category Group Header Row */}
+                    <tr>
+                      <td style={{
+                        border: "1px solid #000000",
+                        padding: "6px 4px",
+                        textAlign: "center",
+                        fontWeight: "bold"
+                      }}>
+                        {index + 1}
+                      </td>
+                      <td style={{
+                        border: "1px solid #000000",
+                        padding: "6px 8px",
+                        textAlign: "left",
+                        fontWeight: "bold"
+                      }}>
+                        {groupHeader}
+                      </td>
+                      <td style={{ border: "1px solid #000000", padding: "6px 4px" }}></td>
+                      <td style={{ border: "1px solid #000000", padding: "6px 4px" }}></td>
+                      <td style={{ border: "1px solid #000000", padding: "6px 4px" }}></td>
+                      <td style={{ border: "1px solid #000000", padding: "6px 4px" }}></td>
+                      {enableDiscounts && (
+                        <td style={{ border: "1px solid #000000", padding: "6px 4px" }}></td>
+                      )}
+                    </tr>
+                    {/* Detail Row */}
+                    <tr>
+                      <td style={{ border: "1px solid #000000", padding: "6px 4px" }}></td>
+                      <td style={{
+                        border: "1px solid #000000",
+                        padding: "8px 8px",
+                        textAlign: "left",
+                        lineHeight: "1.4"
+                      }}>
+                        {item.description || ""}
+                      </td>
+                      <td style={{
+                        border: "1px solid #000000",
+                        padding: "6px 4px",
+                        textAlign: "center"
+                      }}>
+                        {itemUnit}
+                      </td>
+                      <td style={{
+                        border: "1px solid #000000",
+                        padding: "6px 4px",
+                        textAlign: "center"
+                      }}>
+                        {displayQty}
+                      </td>
+                      <td style={{
+                        border: "1px solid #000000",
+                        padding: "6px 4px",
+                        textAlign: "right"
+                      }}>
+                        {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      {enableDiscounts && (
+                        <td style={{
+                          border: "1px solid #000000",
+                          padding: "6px 4px",
+                          textAlign: "center"
+                        }}>
+                          {item.discount && item.discount > 0 ? `(${item.discount}%)` : "-"}
+                        </td>
+                      )}
+                      <td style={{
+                        border: "1px solid #000000",
+                        padding: "6px 4px",
+                        textAlign: "right"
+                      }}>
+                        {((item.quantity * item.unitPrice) * (1 - (item.discount || 0) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  </React.Fragment>
+                );
+              })}
+
+              {/* Subtotal & Discount Rows inside PDF */}
+              {enableDiscounts && totalDiscount > 0 && (
+                <>
+                  <tr style={{ backgroundColor: "#f9fafb" }}>
+                    <td colSpan={6} style={{
+                      border: "1px solid #000000",
+                      padding: "6px 8px",
+                      textAlign: "left",
+                      fontWeight: "bold"
+                    }}>
+                      Subtotal (Before Discount)
+                    </td>
+                    <td style={{
+                      border: "1px solid #000000",
+                      padding: "6px 4px",
+                      textAlign: "right",
+                      fontWeight: "bold"
+                    }}>
+                      Rs. {undiscountedSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                  <tr style={{ backgroundColor: "#f9fafb", color: "#000000" }}>
+                    <td colSpan={6} style={{
+                      border: "1px solid #000000",
+                      padding: "6px 8px",
+                      textAlign: "left",
+                      fontWeight: "bold"
+                    }}>
+                      Total Discount Added
+                    </td>
+                    <td style={{
+                      border: "1px solid #000000",
+                      padding: "6px 4px",
+                      textAlign: "right",
+                      fontWeight: "bold"
+                    }}>
+                      -Rs. {totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                </>
+              )}
+
+              {/* Grand Total Row */}
+              <tr style={{ backgroundColor: "#f3f4f6", color: "#000000" }}>
+                <td colSpan={enableDiscounts ? 6 : 5} style={{
+                  border: "1px solid #000000",
+                  padding: "8px 8px",
+                  textAlign: "left",
+                  fontWeight: "bold"
+                }}>
+                  Total Amount Due
+                </td>
+                <td style={{
+                  border: "1px solid #000000",
+                  padding: "8px 4px",
+                  textAlign: "right",
+                  fontWeight: "bold"
+                }}>
+                  {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Notes */}
+        {notes && (
+          <div className="mb-5">
+            <h3 className="font-bold text-[10px] text-black mb-1">Notes:</h3>
+            <p className="text-[10px] text-black whitespace-pre-wrap">{notes}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Footer Grid */}
+      <div className="flex justify-between items-start mt-auto mb-24 w-full">
+        {/* Terms & Conditions */}
+        <div className="flex-1 mr-5">
+          <div className="h-[30px] border-b border-black mb-2 flex items-end pb-1">
+            <span className="font-bold text-[11px] text-black">Terms & Conditions</span>
+          </div>
+          <span className="block text-[9px] text-black mb-1 leading-normal">
+            • {orderType === "with_construction" ? terms.withConstruction : terms.panelsOnly}
+          </span>
+          <span className="block text-[9px] text-black mb-1 leading-normal">• {terms.additionalAccessories}</span>
+          <span className="block text-[8.5px] italic text-black mt-1 leading-normal">
+            {terms.wastageDisclaimer}
+          </span>
+        </div>
+
+        {/* Bank Details */}
+        <div className="flex-1">
+          <div className="h-[30px] border-b border-black mb-2 flex items-end pb-1">
+            <span className="font-bold text-[10px] text-black">*All Payments should be made in favour of {company.name}</span>
+          </div>
+
+          {bankDetails.map((bank, index) => (
+            <div key={bank.id || index} className="mb-2">
+              <span className="block font-bold text-[9px] text-black">• {bank.bankName} - {bank.branch}</span>
+              <span className="block text-[9px] text-black pl-2">A/c No: {bank.accountNo}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Static Bottom Footer */}
+      <div className="absolute bottom-8 left-10 right-10 border-t border-black pt-2 text-center flex flex-col items-center">
+        <span className="text-[9px] text-black mb-1">
+          {company.phones.join(" | ")}
+        </span>
+        <span className="text-[9px] text-black mb-1">
+          {company.email} | {company.website}
+        </span>
+        <span className="text-[9px] text-black">
+          Prepared by: {preparedBy || "Japan Gedara Team"} | {company.name}
+        </span>
       </div>
     </div>
   );

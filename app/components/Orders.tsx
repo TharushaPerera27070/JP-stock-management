@@ -1,15 +1,19 @@
 import React from 'react';
-import { Search, Plus, Filter, FileText, Edit2 } from 'lucide-react';
+import { Search, Plus, Filter, FileText, Trash2, Edit2 } from 'lucide-react';
 
 import { OrderData } from '../types';
 
 interface OrdersProps {
   orders: OrderData[];
+  invoices: any[];
   setActiveTab: (tab: string) => void;
   formatLKR: (amount: number) => string;
+  onViewInvoice: (orderId: string) => void;
+  onEditOrder: (orderId: string) => void;
+  onDeleteOrder: (orderId: string) => void;
 }
 
-export default function Orders({ orders, setActiveTab, formatLKR }: OrdersProps) {
+export default function Orders({ orders, invoices, setActiveTab, formatLKR, onViewInvoice, onEditOrder, onDeleteOrder }: OrdersProps) {
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -35,6 +39,7 @@ export default function Orders({ orders, setActiveTab, formatLKR }: OrdersProps)
         <table className="w-full text-left text-sm whitespace-nowrap">
           <thead className="bg-gray-50/40 text-gray-500 border-b border-gray-200">
             <tr>
+              <th className="px-6 py-4 font-medium tracking-wider">Invoice No</th>
               <th className="px-6 py-4 font-medium tracking-wider">Time</th>
               <th className="px-6 py-4 font-medium tracking-wider">Customer</th>
               <th className="px-6 py-4 font-medium tracking-wider">Date</th>
@@ -45,37 +50,62 @@ export default function Orders({ orders, setActiveTab, formatLKR }: OrdersProps)
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {orders.map((order) => (
-              <tr key={order.id} className="hover:bg-white transition-colors group">
-                <td className="px-6 py-4 font-medium text-[#E8973A]">
-                  {order.timestamp 
-                    ? new Date(order.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-                    : '--:--'}
-                </td>
-                <td className="px-6 py-4 text-gray-900">{order.customer}</td>
-                <td className="px-6 py-4 text-gray-500">{order.date}</td>
-                <td className="px-6 py-4">
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${order.status === 'Delivered' ? 'bg-gray-900/5 text-gray-600 border-gray-300/20' :
-                      order.status === 'Processing' ? 'bg-gray-900/5 text-gray-600 border-gray-300/20' :
-                        'bg-gray-900/5 text-gray-600 border-gray-300/20'
-                    }`}>
-                    {order.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right text-gray-600">{order.items}</td>
-                <td className="px-6 py-4 text-right font-medium text-gray-900">{formatLKR(order.total)}</td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 text-gray-500 hover:text-[#E8973A] hover:bg-[#E8973A]/10 rounded-md transition-colors">
-                      <FileText className="w-4 h-4" />
-                    </button>
-                    <button className="p-1.5 text-gray-500 hover:text-[#E8973A] hover:bg-[#E8973A]/10 rounded-md transition-colors">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {orders.map((order) => {
+              const matchingInvoice = invoices?.find(
+                (inv) => inv.orderId === order.id || inv.orderId === `ord-${order.id}`
+              );
+              const invoiceNo = order.invoiceNo || matchingInvoice?.invoiceNo || '--';
+
+              return (
+                <tr key={order.id} className="hover:bg-white transition-colors group">
+                  <td className="px-6 py-4 font-bold text-[#E8973A]">
+                    {invoiceNo}
+                  </td>
+                  <td className="px-6 py-4 text-gray-500">
+                    {order.timestamp 
+                      ? new Date(order.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                      : '--:--'}
+                  </td>
+                  <td className="px-6 py-4 text-gray-900">{order.customer}</td>
+                  <td className="px-6 py-4 text-gray-500">{order.date}</td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${order.status === 'Delivered' ? 'bg-gray-900/5 text-gray-600 border-gray-300/20' :
+                        order.status === 'Processing' ? 'bg-gray-900/5 text-gray-600 border-gray-300/20' :
+                          'bg-gray-900/5 text-gray-600 border-gray-300/20'
+                       }`}>
+                      {order.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right text-gray-600">{order.items}</td>
+                  <td className="px-6 py-4 text-right font-medium text-gray-900">{formatLKR(order.total)}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => onViewInvoice(order.id || '')}
+                        title="View Invoice"
+                        className="p-1.5 text-gray-500 hover:text-[#E8973A] hover:bg-[#E8973A]/10 rounded-md transition-colors cursor-pointer"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => onEditOrder(order.id || '')}
+                        title="Edit Order"
+                        className="p-1.5 text-gray-500 hover:text-[#E8973A] hover:bg-[#E8973A]/10 rounded-md transition-colors cursor-pointer"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => onDeleteOrder(order.id || '')}
+                        title="Delete Order"
+                        className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

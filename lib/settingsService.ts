@@ -1,113 +1,115 @@
-// TODO: Implement new database logic here
+/**
+ * lib/settingsService.ts
+ *
+ * Cloud settings service — proxies to firestoreService.ts.
+ * Keeps the same function signatures so existing callers
+ * (CloudSettingsInitializer, settingsStore) still work.
+ */
 
-// --- Company Profile ---
+import {
+  getSettingsFromFirestore,
+  saveCompanyToFirestore,
+  saveTermsToFirestore,
+  savePricingDataToFirestore,
+  saveBankToFirestore,
+  deleteBankFromFirestore,
+  savePresetToFirestore,
+  deletePresetFromFirestore,
+  fullSettingsSyncToFirestore,
+} from "./firestoreService";
+
+// ─── Company Profile ──────────────────────────────────────────────────────────
+
 export async function loadCompanyProfile(): Promise<any> {
-  // TODO: Add logic to fetch company profile from your new DB
-  console.log("Loading company profile from new DB...");
-  return null;
+  const settings = await getSettingsFromFirestore();
+  return settings?.company ?? null;
 }
 
-export async function saveCompanyProfile(data: any) {
-  // TODO: Add logic to save company profile to your new DB
-  console.log("Saving company profile to new DB...", data);
+export async function saveCompanyProfile(data: any): Promise<void> {
+  await saveCompanyToFirestore(data);
 }
 
-// --- Bank Accounts ---
+// ─── Bank Accounts ────────────────────────────────────────────────────────────
+
 export async function loadBankAccounts(): Promise<any[]> {
-  // TODO: Add logic to fetch bank accounts from your new DB
-  console.log("Loading bank accounts from new DB...");
-  return [];
+  const settings = await getSettingsFromFirestore();
+  return settings?.bankDetails ?? [];
 }
 
-export async function saveBankAccount(id: string, data: any) {
-  // TODO: Add logic to save bank account to your new DB
-  console.log("Saving bank account to new DB...", id, data);
+export async function saveBankAccount(id: string, data: any): Promise<void> {
+  await saveBankToFirestore({ ...data, id });
 }
 
-export async function deleteBankAccount(id: string) {
-  // TODO: Add logic to delete bank account from your new DB
-  console.log("Deleting bank account from new DB...", id);
+export async function deleteBankAccount(id: string): Promise<void> {
+  await deleteBankFromFirestore(id);
 }
 
-// --- Terms & Conditions ---
+// ─── Terms & Conditions ───────────────────────────────────────────────────────
+
 export async function loadTermsConditions(): Promise<any> {
-  // TODO: Add logic to fetch terms and conditions from your new DB
-  console.log("Loading terms and conditions from new DB...");
-  return null;
+  const settings = await getSettingsFromFirestore();
+  return settings?.terms ?? null;
 }
 
-export async function saveTermsConditions(data: any) {
-  // TODO: Add logic to save terms and conditions to your new DB
-  console.log("Saving terms and conditions to new DB...", data);
+export async function saveTermsConditions(data: any): Promise<void> {
+  await saveTermsToFirestore(data);
 }
 
-// --- Pricing Presets ---
+// ─── Pricing Presets ──────────────────────────────────────────────────────────
+
 export async function loadPricingPresets(): Promise<any[]> {
-  // TODO: Add logic to fetch pricing presets from your new DB
-  console.log("Loading pricing presets from new DB...");
-  return [];
+  const settings = await getSettingsFromFirestore();
+  return settings?.presets ?? [];
 }
 
-export async function savePreset(id: string, data: any) {
-  // TODO: Add logic to save pricing preset to your new DB
-  console.log("Saving pricing preset to new DB...", id, data);
+export async function savePreset(id: string, data: any): Promise<void> {
+  await savePresetToFirestore({ ...data, id });
 }
 
-export async function deletePreset(id: string) {
-  // TODO: Add logic to delete pricing preset from your new DB
-  console.log("Deleting pricing preset from new DB...", id);
+export async function deletePreset(id: string): Promise<void> {
+  await deletePresetFromFirestore(id);
 }
 
-// --- Calculator Rates ---
+// ─── Calculator / Pricing Rates ───────────────────────────────────────────────
+
 export async function loadCalculatorRates(): Promise<any> {
-  // TODO: Add logic to fetch calculator rates from your new DB
-  console.log("Loading calculator rates from new DB...");
-  return null;
+  const settings = await getSettingsFromFirestore();
+  return settings?.pricingData ?? null;
 }
 
-export async function saveCalculatorRates(data: any) {
-  // TODO: Add logic to save calculator rates to your new DB
-  console.log("Saving calculator rates to new DB...", data);
+export async function saveCalculatorRates(data: any): Promise<void> {
+  await savePricingDataToFirestore(data);
 }
 
-// --- Mass Sync / Resets ---
-export async function loadAllSettingsFromCloud() {
+// ─── Mass Sync ────────────────────────────────────────────────────────────────
+
+export async function loadAllSettingsFromCloud(): Promise<any | null> {
   try {
-    const [comp, banks, terms, pre, rates] = await Promise.all([
-      loadCompanyProfile(),
-      loadBankAccounts(),
-      loadTermsConditions(),
-      loadPricingPresets(),
-      loadCalculatorRates()
-    ]);
+    const settings = await getSettingsFromFirestore();
+    if (!settings) return null;
 
-    if (!comp && banks.length === 0 && !terms && pre.length === 0 && !rates) {
+    const { company, bankDetails, terms, presets, pricingData } = settings;
+    if (!company && (!bankDetails || bankDetails.length === 0) && !terms && (!presets || presets.length === 0) && !pricingData) {
       return null;
     }
 
-    return {
-      company: comp,
-      bankDetails: banks,
-      terms: terms,
-      presets: pre,
-      pricingData: rates
-    };
+    return { company, bankDetails: bankDetails ?? [], terms, presets: presets ?? [], pricingData };
   } catch (e) {
-    console.error("Service Exception in aggregation query:", e);
+    console.error("loadAllSettingsFromCloud error:", e);
     throw e;
   }
 }
 
-// Overwrite EVERYTHING in the cloud with state (for resetting defaults or global sync)
-export async function fullCloudSync(state: any) {
+export async function fullCloudSync(state: any): Promise<void> {
   try {
-    await saveCompanyProfile(state.company);
-    await saveTermsConditions(state.terms);
-    await saveCalculatorRates(state.pricingData);
-
-    for (const b of state.bankDetails) await saveBankAccount(b.id, b);
-    for (const p of state.presets) await savePreset(p.id, p);
+    await fullSettingsSyncToFirestore({
+      company: state.company,
+      terms: state.terms,
+      pricingData: state.pricingData,
+      bankDetails: state.bankDetails ?? [],
+      presets: state.presets ?? [],
+    });
   } catch (e) {
-    console.error("Failed full sync", e);
+    console.error("fullCloudSync error:", e);
   }
 }

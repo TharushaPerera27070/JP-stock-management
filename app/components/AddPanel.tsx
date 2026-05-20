@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Papa from 'papaparse';
 import { ArrowLeft, Save, Box, Upload, FileText, X, CheckCircle2, AlertCircle, Loader2, Download, Trash2 } from 'lucide-react';
+import { useDialog } from './Dialog';
 
 export interface PanelData {
   panelId: string;
@@ -69,6 +70,7 @@ const pricingOptions: Record<string, { label: string, price: number }[]> = {
 };
 
 export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddPanelProps) {
+  const { confirm, toast } = useDialog();
   const [formData, setFormData] = useState<PanelData>(initialData || {
     panelId: 'WAL-NARO-XXX',
     panelType: 'Wall',
@@ -114,11 +116,11 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
 
   const handleSave = () => {
     if (!formData.panelId) {
-      alert('Please fill in the Panel ID.');
+      toast({ message: 'Please fill in the Panel ID.', type: 'error' });
       return;
     }
     if (!formData.size) {
-      alert('Please select a specification or custom size.');
+      toast({ message: 'Please select a specification or custom size.', type: 'error' });
       return;
     }
     onSave({
@@ -215,7 +217,7 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
       },
       error: (error) => {
         console.error("CSV Parse Error:", error);
-        alert("Error parsing CSV file.");
+        toast({ message: 'Error parsing CSV file. Please check the format and try again.', type: 'error' });
         setIsImporting(false);
       }
     });
@@ -243,13 +245,19 @@ export default function AddPanel({ onBack, onSave, onDelete, initialData }: AddP
           {initialData && onDelete && (
             <button
               onClick={async () => {
-                if (confirm('Are you sure you want to delete this panel?')) {
+                const ok = await confirm({
+                  title: 'Delete Panel',
+                  message: 'Are you sure you want to permanently delete this panel? This cannot be undone.',
+                  confirmLabel: 'Delete',
+                  variant: 'danger',
+                });
+                if (ok) {
                   try {
                     await onDelete();
                     onBack();
                   } catch (error) {
                     console.error("Delete failed:", error);
-                    alert("Failed to delete panel. Please try again.");
+                    toast({ message: 'Failed to delete panel. Please try again.', type: 'error' });
                   }
                 }
               }}
