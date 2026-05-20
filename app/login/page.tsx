@@ -52,12 +52,6 @@ export default function LoginPage() {
       <div className="w-full max-w-md overflow-hidden rounded-3xl border border-gray-100 bg-white p-8 shadow-2xl md:p-10 relative">
         <div className="absolute left-0 top-0 h-1.5 w-full bg-linear-to-r from-[#E8973A] to-[#be7221]" />
 
-        {/* <div className="mb-6 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#E8973A]/10 text-[#E8973A]">
-              <LockKeyhole className="h-8 w-8" />
-            </div>
-          </div> */}
-
         <div className="mb-8 flex flex-col items-center text-center">
           <Image
             src="/Japan-Gedara-Logo-removebg-preview.png"
