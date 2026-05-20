@@ -251,14 +251,51 @@ export async function deletePanelFromFirestore(id: string): Promise<void> {
 
 // ─── CUSTOMERS ────────────────────────────────────────────────────────────────
 
-export async function saveCustomerToFirestore(data: any): Promise<string> {
-  const payload = serialize({ ...data, lastUpdated: tsNow(), createdAt: data.createdAt ?? tsNow() });
-  if (data.id) {
-    await setDoc(doc(db, "customers", data.id), payload, { merge: true });
-    return data.id;
+function normalizeCustomerRecord(data: any) {
+  const contactNumber = data?.contactNumber ?? data?.phone ?? "";
+  const address = data?.address ?? data?.company ?? "";
+  const discount = typeof data?.discount === "number" ? data.discount : Number(data?.discount ?? 0);
+
+  return {
+    ...data,
+    name: data?.name ?? "",
+    contactNumber,
+    phone: data?.phone ?? contactNumber,
+    company: data?.company ?? "",
+    address,
+    discount: Number.isFinite(discount) ? discount : 0,
+    totalOrders: typeof data?.totalOrders === "number" ? data.totalOrders : Number(data?.totalOrders ?? 0),
+  };
+}
+
+function customerIdentity(customer: any) {
+  return String(customer?.name ?? "").trim().toLowerCase();
+}
+
+export async function upsertCustomerToFirestore(data: any): Promise<string> {
+  const normalized = normalizeCustomerRecord(data);
+  const customers = await getCustomersFromFirestore();
+  const match = customers.find((customer) => customerIdentity(customer) === customerIdentity(normalized));
+  const id = data?.id ?? match?.id;
+  const payload = serialize({
+    ...normalized,
+    id,
+    totalOrders: normalized.totalOrders ?? match?.totalOrders ?? 0,
+    createdAt: data?.createdAt ?? match?.createdAt ?? tsNow(),
+    lastUpdated: tsNow(),
+  });
+
+  if (id) {
+    await setDoc(doc(db, "customers", id), payload, { merge: true });
+    return id;
   }
+
   const ref = await addDoc(collection(db, "customers"), payload);
   return ref.id;
+}
+
+export async function saveCustomerToFirestore(data: any): Promise<string> {
+  return upsertCustomerToFirestore(data);
 }
 
 export async function updateCustomerInFirestore(id: string, data: any): Promise<void> {
@@ -267,7 +304,7 @@ export async function updateCustomerInFirestore(id: string, data: any): Promise<
 
 export async function getCustomersFromFirestore(): Promise<any[]> {
   const snap = await getDocs(query(collection(db, "customers"), orderBy("lastUpdated", "desc")));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs.map((d) => normalizeCustomerRecord({ id: d.id, ...d.data() }));
 }
 
 export async function deleteCustomerFromFirestore(id: string): Promise<void> {

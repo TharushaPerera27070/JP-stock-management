@@ -21,9 +21,11 @@ export interface User {
 interface AuthStore {
   user: User | null;
   isAuthenticated: boolean;
+  hasHydrated: boolean;
   login: (user: User) => void;
   logout: () => void;
   updateCompanySettings: (settings: CompanySettings) => void;
+  setHasHydrated: (value: boolean) => void;
 }
 
 const defaultCompanySettings: CompanySettings = {
@@ -40,8 +42,10 @@ export const useAuthStore = create<AuthStore>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
+      hasHydrated: false,
       login: (user: User) => set({ user, isAuthenticated: true }),
       logout: () => set({ user: null, isAuthenticated: false }),
+      setHasHydrated: (value: boolean) => set({ hasHydrated: value }),
       updateCompanySettings: (settings: CompanySettings) =>
         set((state) => {
           if (!state.user) return state;
@@ -55,6 +59,9 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: 'auth-storage',
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

@@ -63,7 +63,7 @@ export default function Inventory({
           </button>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white backdrop-blur-sm shadow-2xl overflow-x-auto scrollbar-thin scrollbar-track-gray-900 scrollbar-thumb-gray-700">
+        <div className="rounded-2xl border border-gray-200 bg-white backdrop-blur-sm shadow-2xl overflow-x-auto scrollbar-thin scrollbar-track-white scrollbar-thumb-white">
           <table className="w-full min-w-250 text-left text-sm whitespace-nowrap">
             <thead className="bg-gray-50/40 text-gray-500 border-b border-gray-200">
               <tr>
@@ -183,14 +183,14 @@ export default function Inventory({
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-[#E8973A] bg-white/50 hover:bg-[#E8973A]/10 border border-gray-300/50 hover:border-[#E8973A]/30 rounded-lg transition-all"
                           title="Edit Panel"
                         >
-                          <Edit2 className="w-3.5 h-3.5" /> Edit
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeletePanel(item)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-red-400 bg-white/50 hover:bg-red-500/10 border border-gray-300/50 hover:border-red-500/30 rounded-lg transition-all"
                           title="Delete Panel"
                         >
-                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>

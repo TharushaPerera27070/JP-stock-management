@@ -16,6 +16,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useDialog } from "./components/Dialog";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/store";
 
 import AddPanel from "./components/AddPanel";
 import AddCustomer from "./components/AddCustomer";
@@ -46,6 +48,8 @@ import {
 
 export default function InventoryDashboard() {
   const { confirm, toast } = useDialog();
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [activeSubTab, setActiveSubTab] = useState<
     "invoices" | "quotations" | "receipts"
@@ -373,7 +377,13 @@ export default function InventoryDashboard() {
             />
             <span className="font-medium">Settings</span>
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 mt-2">
+          <button
+            onClick={() => {
+              logout();
+              router.replace("/login");
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition-all duration-300 mt-2"
+          >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Logout</span>
           </button>
@@ -611,7 +621,15 @@ export default function InventoryDashboard() {
             />
           )}
           {activeTab === "add-customer" && (
-            <AddCustomer onBack={() => setActiveTab("customers")} />
+            <AddCustomer
+              onBack={() => setActiveTab("customers")}
+              onSaved={(customer) =>
+                setCustomers((prev) => [
+                  customer,
+                  ...prev.filter((item) => item.id !== customer.id),
+                ])
+              }
+            />
           )}
           {activeTab === "settings" && (
             <SettingsPage onBack={() => setActiveTab("dashboard")} />

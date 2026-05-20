@@ -38,8 +38,11 @@ export interface OrderData {
 export interface Customer {
   id: string;
   name: string;
-  company: string;
-  email: string;
-  phone: string;
+  contactNumber: string;
+  address: string;
+  discount: number;
+  company?: string;
+  email?: string;
+  phone?: string;
   totalOrders: number;
 }

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { DialogProvider } from "./components/Dialog";
 import CloudSettingsInitializer from "./components/CloudSettingsInitializer";
+import AuthGate from "./components/AuthGate";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "JP Stock Management",
+  title: "JG Portal",
   description: "Simple, powerful inventory management platform",
 };
 
@@ -31,8 +32,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <DialogProvider>
-          <CloudSettingsInitializer />
-          {children}
+          <AuthGate>
+            <CloudSettingsInitializer />
+            {children}
+          </AuthGate>
         </DialogProvider>
       </body>
     </html>

@@ -28,4 +28,9 @@ export {
   getDocumentFromFirestore,
   deleteDocumentFromFirestore,
   getNextDocumentNumber,
+  getCustomersFromFirestore,
+  saveCustomerToFirestore,
+  upsertCustomerToFirestore,
+  updateCustomerInFirestore,
+  deleteCustomerFromFirestore,
 } from "./firestoreService";
