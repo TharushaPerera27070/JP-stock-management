@@ -24,7 +24,7 @@ export default function AddCustomer({ onBack, onSaved }: AddCustomerProps) {
   const [email, setEmail] = useState("");
   const [contactNumber, setContactNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [discount, setDiscount] = useState(0);
+  const [discount, setDiscount] = useState<number | "">(0);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async (e: FormEvent) => {
@@ -210,7 +210,14 @@ export default function AddCustomer({ onBack, onSaved }: AddCustomerProps) {
                   min="0"
                   max="100"
                   value={discount}
-                  onChange={(e) => setDiscount(Number(e.target.value))}
+                  onChange={(e) => {
+                    const nextValue = e.target.value;
+                    if (nextValue === "") {
+                      setDiscount("");
+                      return;
+                    }
+                    setDiscount(Number(nextValue));
+                  }}
                   placeholder="0"
                   className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all"
                 />

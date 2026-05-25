@@ -80,7 +80,6 @@ function InvoiceEditor({
   const [clientName, setClientName] = useState("");
   const [clientContactNumber, setClientContactNumber] = useState("");
   const [clientAddress, setClientAddress] = useState("");
-  const [customerDiscount, setCustomerDiscount] = useState(0);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [issueDate, setIssueDate] = useState(
     new Date().toISOString().split("T")[0],
@@ -114,6 +113,20 @@ function InvoiceEditor({
   const [documentId, setDocumentId] = useState<string | null>(editId);
   const [isLoading, setIsLoading] = useState(false);
   const [invoiceType, setInvoiceType] = useState<"normal" | "cash">("normal");
+
+  const normalizeDiscount = (value: unknown) => {
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) return 0;
+    return Math.min(100, Math.max(0, parsed));
+  };
+
+  const applyCustomerDiscountToItems = (discountValue: unknown) => {
+    const normalized = normalizeDiscount(discountValue);
+    setEnableDiscounts(normalized > 0);
+    setItems((prevItems) =>
+      prevItems.map((item) => ({ ...item, discount: normalized })),
+    );
+  };
 
   const handleInvoiceTypeChange = (type: "normal" | "cash") => {
     setInvoiceType(type);
@@ -174,7 +187,7 @@ function InvoiceEditor({
         matchedCustomer.contactNumber || matchedCustomer.phone || "",
       );
       setClientAddress(matchedCustomer.address || "");
-      setCustomerDiscount(matchedCustomer.discount || 0);
+      applyCustomerDiscountToItems(matchedCustomer.discount || 0);
     }
   }, [clientName, customers]);
 
@@ -182,7 +195,7 @@ function InvoiceEditor({
     setClientName(customer.name);
     setClientContactNumber(customer.contactNumber || customer.phone || "");
     setClientAddress(customer.address || "");
-    setCustomerDiscount(customer.discount || 0);
+    applyCustomerDiscountToItems(customer.discount || 0);
   };
 
   const loadExistingDocument = async (id: string) => {
@@ -196,7 +209,6 @@ function InvoiceEditor({
         setClientName(doc.clientName || "");
         setClientContactNumber(doc.clientContactNumber || "");
         setClientAddress(doc.clientAddress || "");
-        setCustomerDiscount(doc.customerDiscount || 0);
         setIssueDate(doc.issueDate || new Date().toISOString().split("T")[0]);
         setDueDate(
           doc.dueDate ||
@@ -211,7 +223,22 @@ function InvoiceEditor({
         setEnableDiscounts(doc.enableDiscounts || false);
         setInvoiceType(doc.invoiceType || "normal");
         if (doc.items && doc.items.length > 0) {
-          setItems(doc.items);
+          const legacyDiscount = normalizeDiscount(doc.customerDiscount || 0);
+          const hasItemDiscount = doc.items.some(
+            (item: LineItem) => normalizeDiscount(item.discount) > 0,
+          );
+
+          if (!hasItemDiscount && legacyDiscount > 0) {
+            setItems(
+              doc.items.map((item: LineItem) => ({
+                ...item,
+                discount: legacyDiscount,
+              })),
+            );
+            setEnableDiscounts(true);
+          } else {
+            setItems(doc.items);
+          }
         }
         setDocumentId(id);
       }
@@ -273,13 +300,15 @@ function InvoiceEditor({
   };
 
   const saveCurrentInvoice = async () => {
+    const customerDiscountFromItems =
+      items.find((item) => normalizeDiscount(item.discount) > 0)?.discount || 0;
+
     const docData = {
       title,
       invoiceNo,
       clientName,
       clientContactNumber,
       clientAddress,
-      customerDiscount,
       issueDate,
       dueDate,
       pricingMode,
@@ -309,7 +338,7 @@ function InvoiceEditor({
           contactNumber: clientContactNumber.trim(),
           phone: clientContactNumber.trim(),
           address: clientAddress.trim(),
-          discount: Number(customerDiscount) || 0,
+          discount: normalizeDiscount(customerDiscountFromItems),
           totalOrders: 0,
         });
       }
@@ -427,22 +456,6 @@ function InvoiceEditor({
                       onChange={(e) => setClientAddress(e.target.value)}
                       rows={3}
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all resize-none text-gray-900 placeholder:text-gray-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Customer Discount (%)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={customerDiscount}
-                      onChange={(e) =>
-                        setCustomerDiscount(Number(e.target.value))
-                      }
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-sm font-semibold transition-all text-gray-900 placeholder:text-gray-400"
                     />
                   </div>
 

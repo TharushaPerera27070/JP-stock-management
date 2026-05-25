@@ -35,7 +35,11 @@ import SettingsPage from "./settings/page";
 import { InventoryItem, OrderData, Customer } from "./types";
 import Image from "next/image";
 import Link from "next/link";
-import { getInvoicesFromFirestore } from "@/lib/documentStorage";
+import {
+  getInvoicesFromFirestore,
+  getQuotationsFromFirestore,
+  getReceiptsFromFirestore,
+} from "@/lib/documentStorage";
 import {
   getOrdersFromFirestore,
   saveOrderToFirestore,
@@ -88,20 +92,32 @@ export default function InventoryDashboard() {
 
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [quotations, setQuotations] = useState<any[]>([]);
+  const [receipts, setReceipts] = useState<any[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
     const fetchStoredData = async () => {
       try {
-        const [firestoreOrders, storedInvoices, panels, firestoreCustomers] =
-          await Promise.all([
-            getOrdersFromFirestore(),
-            getInvoicesFromFirestore(),
-            getPanelsFromFirestore(),
-            getCustomersFromFirestore(),
-          ]);
+        const [
+          firestoreOrders,
+          storedInvoices,
+          storedQuotations,
+          storedReceipts,
+          panels,
+          firestoreCustomers,
+        ] = await Promise.all([
+          getOrdersFromFirestore(),
+          getInvoicesFromFirestore(),
+          getQuotationsFromFirestore(),
+          getReceiptsFromFirestore(),
+          getPanelsFromFirestore(),
+          getCustomersFromFirestore(),
+        ]);
         setOrders((firestoreOrders as OrderData[]) || []);
         setInvoices(storedInvoices || []);
+        setQuotations(storedQuotations || []);
+        setReceipts(storedReceipts || []);
         setItems((panels as InventoryItem[]) || []);
         setCustomers((firestoreCustomers as Customer[]) || []);
       } catch (e) {
@@ -118,18 +134,64 @@ export default function InventoryDashboard() {
   const lowStockCount = items.filter(
     (item) => item.status === "Low Stock" || item.status === "Out of Stock",
   ).length;
+  const invoiceCount = invoices.length;
+  const quotationCount = quotations.length;
+  const pettyCashCount = receipts.length;
+  const customerCount = customers.length;
 
-  const thisMonthRevenue = invoices
+  const getInvoiceRevenue = (inv: any) =>
+    inv.summary?.finalTotal !== undefined
+      ? inv.summary.finalTotal
+      : inv.total !== undefined
+        ? inv.total
+        : 0;
+
+  const getInvoiceDate = (inv: any) => {
+    const rawDate = inv.issueDate || inv.timestamp || inv.date;
+    return rawDate ? new Date(rawDate) : null;
+  };
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const previousMonthDate = new Date(currentYear, currentMonth - 1, 1);
+  const previousMonth = previousMonthDate.getMonth();
+  const previousYear = previousMonthDate.getFullYear();
+
+  const monthRevenue = invoices
     .filter((inv) => inv.isFromOrder)
-    .reduce((acc, inv) => {
-      const val =
-        inv.summary?.finalTotal !== undefined
-          ? inv.summary.finalTotal
-          : inv.total !== undefined
-            ? inv.total
-            : 0;
-      return acc + val;
-    }, 0);
+    .reduce(
+      (acc, inv) => {
+        const invoiceDate = getInvoiceDate(inv);
+        if (!invoiceDate || Number.isNaN(invoiceDate.getTime())) return acc;
+
+        const revenue = getInvoiceRevenue(inv);
+        if (
+          invoiceDate.getMonth() === currentMonth &&
+          invoiceDate.getFullYear() === currentYear
+        ) {
+          acc.current += revenue;
+        } else if (
+          invoiceDate.getMonth() === previousMonth &&
+          invoiceDate.getFullYear() === previousYear
+        ) {
+          acc.previous += revenue;
+        }
+
+        return acc;
+      },
+      { current: 0, previous: 0 },
+    );
+
+  const thisMonthRevenue = monthRevenue.current;
+  const revenueGrowthPercent =
+    monthRevenue.previous > 0
+      ? ((monthRevenue.current - monthRevenue.previous) /
+          monthRevenue.previous) *
+        100
+      : monthRevenue.current > 0
+        ? 100
+        : 0;
 
   const formatLKR = (amount: number) =>
     `LKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -462,8 +524,13 @@ export default function InventoryDashboard() {
           {activeTab === "dashboard" && (
             <Dashboard
               thisMonthRevenue={thisMonthRevenue}
+              revenueGrowthPercent={revenueGrowthPercent}
               totalValue={totalValue}
               lowStockCount={lowStockCount}
+              customerCount={customerCount}
+              invoices={invoices}
+              quotations={quotations}
+              receipts={receipts}
               orders={orders}
               items={items}
               setActiveTab={setActiveTab}
