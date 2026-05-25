@@ -25,6 +25,9 @@ export {
   getReceiptFromFirestore,
   deleteReceiptFromFirestore,
 
+  savePettyCashEntryToFirestore,
+  getPettyCashEntriesFromFirestore,
+
   getDocumentFromFirestore,
   deleteDocumentFromFirestore,
   getNextDocumentNumber,

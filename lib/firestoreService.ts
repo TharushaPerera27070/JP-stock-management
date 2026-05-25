@@ -156,6 +156,33 @@ export async function deleteReceiptFromFirestore(id: string): Promise<void> {
   await deleteDoc(doc(db, "receipts", id));
 }
 
+// ─── PETTY CASH ENTRIES ───────────────────────────────────────────────────────
+
+export async function savePettyCashEntryToFirestore(data: any): Promise<string> {
+  const payload = serialize({
+    ...data,
+    amount: Number(data?.amount) || 0,
+    dateKey: data?.dateKey ?? new Date().toISOString().split("T")[0],
+    lastUpdated: tsNow(),
+    createdAt: data?.createdAt ?? tsNow(),
+  });
+
+  if (data?.id) {
+    await setDoc(doc(db, "pettyCashEntries", data.id), payload, { merge: true });
+    return data.id;
+  }
+
+  const ref = await addDoc(collection(db, "pettyCashEntries"), payload);
+  return ref.id;
+}
+
+export async function getPettyCashEntriesFromFirestore(): Promise<any[]> {
+  const snap = await getDocs(
+    query(collection(db, "pettyCashEntries"), orderBy("createdAt", "desc")),
+  );
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 // ─── GENERIC DOCUMENT HELPERS (used by Documents.tsx) ────────────────────────
 
 export async function getDocumentFromFirestore(
