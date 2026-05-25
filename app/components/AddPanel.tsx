@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import Papa from "papaparse";
 import {
-  ArrowLeft,
   Save,
   Box,
   Upload,
@@ -12,8 +11,11 @@ import {
   Loader2,
   Download,
   Trash2,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useDialog } from "./Dialog";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { storage } from "@/lib/firebase";
 
 export interface PanelData {
   panelId: string;
@@ -92,6 +94,8 @@ export default function AddPanel({
   initialData,
 }: AddPanelProps) {
   const { confirm, toast } = useDialog();
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<PanelData>(
     initialData || {
       panelId: "WAL-NARO-XXX",
@@ -113,6 +117,23 @@ export default function AddPanel({
     success: number;
     failed: number;
   } | null>(null);
+
+  const uploadPanelImage = async (panelId: string) => {
+    if (!selectedImageFile) {
+      return formData.imageUrl?.trim() || "";
+    }
+
+    const safeFileName = selectedImageFile.name.replace(
+      /[^a-zA-Z0-9._-]/g,
+      "_",
+    );
+    const imageRef = ref(
+      storage,
+      `panel-images/${panelId}/${Date.now()}-${safeFileName}`,
+    );
+    await uploadBytes(imageRef, selectedImageFile);
+    return getDownloadURL(imageRef);
+  };
 
   const generatePanelId = (panel: Partial<PanelData>) => {
     let typePrefix = (panel.panelType || "WAL").substring(0, 3).toUpperCase();
@@ -142,7 +163,7 @@ export default function AddPanel({
     setFormData((prev) => ({ ...prev, ...newData, panelId: newId }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.panelId) {
       toast({ message: "Please fill in the Panel ID.", type: "error" });
       return;
@@ -154,12 +175,27 @@ export default function AddPanel({
       });
       return;
     }
-    onSave({
-      ...formData,
-      color: formData.color.trim(),
-      imageUrl: formData.imageUrl?.trim(),
-      importDetails: formData.importDetails?.trim(),
-    });
+
+    setIsSaving(true);
+    try {
+      const imageUrl = await uploadPanelImage(formData.panelId);
+      await onSave({
+        ...formData,
+        color: formData.color.trim(),
+        imageUrl,
+        importDetails: formData.importDetails?.trim(),
+      });
+      setFormData((prev) => ({ ...prev, imageUrl }));
+      setSelectedImageFile(null);
+    } catch (error) {
+      console.error("Failed to save panel image:", error);
+      toast({
+        message: "Failed to upload the panel image. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handlePanelTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -297,6 +333,7 @@ export default function AddPanel({
     formData.panelType === "Roofing" ? roofingDesigns : wallCeilingDesigns;
   const currentSizeOptions =
     pricingOptions[formData.panelType] || pricingOptions["Wall"];
+  const hasImportResults = importResults !== null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -333,6 +370,7 @@ export default function AddPanel({
           )}
           <button
             onClick={handleSave}
+            disabled={isSaving || isImporting}
             className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 font-medium transition-all shadow-lg shadow-[#E8973A]/20"
           >
             <Save className="w-4 h-4" /> Save Panel
@@ -355,11 +393,7 @@ export default function AddPanel({
           </div>
           <div className="flex items-center gap-3">
             <label
-              className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed 
-              ${isImporting ? "border-gray-600 bg-white/50 cursor-not-allowed" : "border-[#E8973A]/30 hover:border-[#E8973A] hover:bg-[#E8973A]/5 cursor-pointer"} 
-              transition-all text-sm font-medium
-            `}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed transition-all text-sm font-medium ${isImporting ? "border-gray-600 bg-white/50 cursor-not-allowed" : "border-[#E8973A]/30 hover:border-[#E8973A] hover:bg-[#E8973A]/5 cursor-pointer"}`}
             >
               {isImporting ? (
                 <>
@@ -399,7 +433,7 @@ export default function AddPanel({
           </div>
         </div>
 
-        {importResults && (
+        {hasImportResults && importResults && (
           <div
             className={`p-4 rounded-xl flex items-center justify-between ${importResults.failed > 0 ? "bg-red-500/10 border border-red-500/20" : "bg-emerald-500/10 border border-emerald-500/20"}`}
           >
@@ -488,18 +522,51 @@ export default function AddPanel({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-500">
-                Photo URL
-              </label>
-              <input
-                type="text"
-                placeholder="https://..."
-                value={formData.imageUrl || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, imageUrl: e.target.value })
-                }
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50 text-gray-900 transition-all"
-              />
+              <label className="text-sm font-medium text-gray-500">Photo</label>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 hover:border-[#E8973A]/50 hover:bg-[#E8973A]/5 transition-all cursor-pointer">
+                  <ImageIcon className="w-4 h-4 text-[#E8973A]" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {selectedImageFile ? "Replace image" : "Choose image file"}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setSelectedImageFile(file);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-700">
+                      {selectedImageFile
+                        ? selectedImageFile.name
+                        : formData.imageUrl?.trim()
+                          ? "Existing image will be kept unless replaced"
+                          : "No image selected"}
+                    </p>
+                    <p className="truncate text-xs text-gray-500">
+                      {selectedImageFile
+                        ? "This file will be uploaded to Firebase Storage when you save."
+                        : formData.imageUrl?.trim()
+                          ? formData.imageUrl.trim()
+                          : "Image is optional."}
+                    </p>
+                  </div>
+                  {selectedImageFile && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedImageFile(null)}
+                      className="shrink-0 p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

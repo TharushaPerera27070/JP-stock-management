@@ -77,7 +77,7 @@ export default function InventoryDashboard() {
       try {
         await deletePanelFromFirestore(item.id);
         setItems((prev) => prev.filter((i) => i.id !== item.id));
-        toast({ message: "Panel deleted successfully.", type: "success" });
+        toast({ message: "Panel deleted successfully.", type: "delete" });
       } catch (e) {
         console.error("Panel delete error:", e);
         toast({ message: "Failed to delete panel.", type: "error" });
@@ -229,7 +229,7 @@ export default function InventoryDashboard() {
       try {
         await deleteOrderFromFirestore(orderId);
         setOrders((prev) => prev.filter((o) => o.id !== orderId));
-        toast({ message: "Order deleted successfully.", type: "success" });
+        toast({ message: "Order deleted successfully.", type: "delete" });
       } catch (e) {
         console.error("Order delete error:", e);
         toast({ message: "Failed to delete order.", type: "error" });

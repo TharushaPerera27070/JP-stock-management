@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useDialog } from "./Dialog";
-import { Search, Plus, Filter, FileText, Edit2, Trash2, Eye, Receipt } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Filter,
+  FileText,
+  Edit2,
+  Trash2,
+  Eye,
+  Receipt,
+} from "lucide-react";
 import Link from "next/link";
 import {
   getInvoicesFromFirestore,
   getQuotationsFromFirestore,
   getReceiptsFromFirestore,
-  deleteDocumentFromFirestore
+  deleteDocumentFromFirestore,
 } from "@/lib/documentStorage";
 
 interface DocumentItem {
@@ -38,7 +47,7 @@ export default function Documents({
   setActiveSubTab,
   onEdit,
   onView,
-  onCreate
+  onCreate,
 }: DocumentsProps) {
   const { confirm, toast } = useDialog();
   const [searchQuery, setSearchQuery] = useState("");
@@ -79,11 +88,17 @@ export default function Documents({
     if (ok) {
       try {
         await deleteDocumentFromFirestore(activeSubTab.slice(0, -1) as any, id);
-        toast({ message: `${docTypeLabel.toUpperCase()} deleted successfully.`, type: "success" });
+        toast({
+          message: `${docTypeLabel.toUpperCase()} deleted successfully.`,
+          type: "delete",
+        });
         loadDocuments();
       } catch (error) {
         console.error("Error deleting document:", error);
-        toast({ message: "Failed to delete document. Please try again.", type: "error" });
+        toast({
+          message: "Failed to delete document. Please try again.",
+          type: "error",
+        });
       }
     }
   };
@@ -99,7 +114,7 @@ export default function Documents({
   const formatLKR = (amount: number) => {
     return `LKR ${amount.toLocaleString(undefined, {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     })}`;
   };
 
@@ -116,13 +131,19 @@ export default function Documents({
     }
   };
 
-  const handleEditClick = (type: "invoice" | "quotation" | "receipt", id: string) => {
+  const handleEditClick = (
+    type: "invoice" | "quotation" | "receipt",
+    id: string,
+  ) => {
     if (onEdit) {
       onEdit(type, id);
     }
   };
 
-  const handleViewClick = (type: "invoice" | "quotation" | "receipt", id: string) => {
+  const handleViewClick = (
+    type: "invoice" | "quotation" | "receipt",
+    id: string,
+  ) => {
     if (onView) {
       onView(type, id);
     }
@@ -140,10 +161,11 @@ export default function Documents({
                 setActiveSubTab(tab);
                 setSearchQuery("");
               }}
-              className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap ${activeSubTab === tab
+              className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all whitespace-nowrap ${
+                activeSubTab === tab
                   ? "bg-white text-gray-900 shadow-sm border border-gray-200"
                   : "text-gray-500 hover:text-gray-900"
-                }`}
+              }`}
             >
               <span className="capitalize">{tab}</span>
             </button>
@@ -162,8 +184,8 @@ export default function Documents({
             />
           </div>
 
-          {activeSubTab === "invoices" && (
-            onCreate ? (
+          {activeSubTab === "invoices" &&
+            (onCreate ? (
               <button
                 onClick={() => handleCreateClick("invoice")}
                 className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 text-sm font-semibold transition-all shadow-lg shadow-[#E8973A]/20 cursor-pointer"
@@ -177,11 +199,10 @@ export default function Documents({
               >
                 <Plus className="w-4 h-4" /> Create Invoice
               </Link>
-            )
-          )}
+            ))}
 
-          {activeSubTab === "quotations" && (
-            onCreate ? (
+          {activeSubTab === "quotations" &&
+            (onCreate ? (
               <button
                 onClick={() => handleCreateClick("quotation")}
                 className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 text-sm font-semibold transition-all shadow-lg shadow-[#E8973A]/20 cursor-pointer"
@@ -195,11 +216,10 @@ export default function Documents({
               >
                 <Plus className="w-4 h-4" /> Create Quotation
               </Link>
-            )
-          )}
+            ))}
 
-          {activeSubTab === "receipts" && (
-            onCreate ? (
+          {activeSubTab === "receipts" &&
+            (onCreate ? (
               <button
                 onClick={() => handleCreateClick("receipt")}
                 className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 text-sm font-semibold transition-all shadow-lg shadow-[#E8973A]/20 cursor-pointer"
@@ -213,8 +233,7 @@ export default function Documents({
               >
                 <Plus className="w-4 h-4" /> Create Receipt
               </Link>
-            )
-          )}
+            ))}
         </div>
       </div>
 
@@ -223,16 +242,21 @@ export default function Documents({
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-[#E8973A] animate-spin" />
-            <p className="text-gray-500 text-sm font-medium">Loading documents...</p>
+            <p className="text-gray-500 text-sm font-medium">
+              Loading documents...
+            </p>
           </div>
         ) : filteredDocs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center px-6">
             <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mb-4 border border-gray-100 text-gray-400">
               <FileText className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900">No {activeSubTab} found</h3>
+            <h3 className="text-lg font-bold text-gray-900">
+              No {activeSubTab} found
+            </h3>
             <p className="text-gray-500 text-sm mt-1 max-w-sm">
-              Create a new document or change your search query to view saved records.
+              Create a new document or change your search query to view saved
+              records.
             </p>
           </div>
         ) : (
@@ -240,30 +264,52 @@ export default function Documents({
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-gray-50/40 text-gray-500 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 font-medium tracking-wider">Number</th>
-                  <th className="px-6 py-4 font-medium tracking-wider">Client / Received From</th>
+                  <th className="px-6 py-4 font-medium tracking-wider">
+                    Number
+                  </th>
+                  <th className="px-6 py-4 font-medium tracking-wider">
+                    Client / Received From
+                  </th>
                   <th className="px-6 py-4 font-medium tracking-wider">Date</th>
-                  <th className="px-6 py-4 font-medium tracking-wider">Prepared By</th>
-                  <th className="px-6 py-4 font-medium tracking-wider text-right">Total Amount</th>
-                  <th className="px-6 py-4 font-medium tracking-wider text-center">Actions</th>
+                  <th className="px-6 py-4 font-medium tracking-wider">
+                    Prepared By
+                  </th>
+                  <th className="px-6 py-4 font-medium tracking-wider text-right">
+                    Total Amount
+                  </th>
+                  <th className="px-6 py-4 font-medium tracking-wider text-center">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 text-gray-800">
                 {filteredDocs.map((doc) => {
                   const docNo = getDocNumber(doc);
                   const client = getClientName(doc);
-                  const type = activeSubTab.slice(0, -1) as "invoice" | "quotation" | "receipt";
+                  const type = activeSubTab.slice(0, -1) as
+                    | "invoice"
+                    | "quotation"
+                    | "receipt";
                   const editPath = `/${type}?id=${doc.id}`;
                   const viewPath = `/${type}?id=${doc.id}&mode=view`;
 
                   return (
-                    <tr key={doc.id} className="hover:bg-gray-50/30 transition-colors group">
-                      <td className="px-6 py-4 font-bold text-[#E8973A]">{docNo}</td>
-                      <td className="px-6 py-4 font-semibold text-gray-900">{client}</td>
+                    <tr
+                      key={doc.id}
+                      className="hover:bg-gray-50/30 transition-colors group"
+                    >
+                      <td className="px-6 py-4 font-bold text-[#E8973A]">
+                        {docNo}
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {client}
+                      </td>
                       <td className="px-6 py-4 text-gray-500">
                         {new Date(doc.issueDate).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 text-gray-500">{doc.preparedBy || "System User"}</td>
+                      <td className="px-6 py-4 text-gray-500">
+                        {doc.preparedBy || "System User"}
+                      </td>
                       <td className="px-6 py-4 text-right font-bold text-gray-900">
                         {formatLKR(doc.summary?.finalTotal || 0)}
                       </td>

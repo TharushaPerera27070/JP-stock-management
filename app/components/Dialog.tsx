@@ -32,7 +32,7 @@ interface ConfirmOptions {
 
 interface ToastOptions {
   message: string;
-  type?: "success" | "error" | "info";
+  type?: "success" | "error" | "info" | "delete";
   duration?: number;
 }
 
@@ -66,15 +66,34 @@ function Toast({
   item: ToastItem;
   onRemove: (id: number) => void;
 }) {
+  const duration = item.duration ?? 3500;
+  const [elapsed, setElapsed] = useState(0);
+
   useEffect(() => {
-    const t = setTimeout(() => onRemove(item.id), item.duration ?? 3500);
-    return () => clearTimeout(t);
-  }, [item, onRemove]);
+    const startedAt = Date.now();
+    const tick = window.setInterval(() => {
+      setElapsed(Math.min(Date.now() - startedAt, duration));
+    }, 50);
+    const t = window.setTimeout(() => onRemove(item.id), duration);
+
+    return () => {
+      clearInterval(tick);
+      clearTimeout(t);
+    };
+  }, [duration, item.id, onRemove]);
+
+  useEffect(() => {
+    setElapsed(0);
+  }, [item.id]);
 
   const config = {
     success: {
       icon: <CheckCircle2 className="w-5 h-5 shrink-0" />,
       bg: "bg-emerald-600",
+    },
+    delete: {
+      icon: <Trash2 className="w-5 h-5 shrink-0" />,
+      bg: "bg-red-600",
     },
     error: { icon: <XCircle className="w-5 h-5 shrink-0" />, bg: "bg-red-600" },
     info: { icon: <Info className="w-5 h-5 shrink-0" />, bg: "bg-gray-800" },
@@ -82,16 +101,32 @@ function Toast({
 
   return (
     <div
-      className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-white text-sm font-semibold animate-in slide-in-from-top-4 duration-300 ${config.bg}`}
+      className={`relative overflow-hidden flex items-center gap-3 px-5 py-3.5 pr-4 rounded-2xl shadow-xl text-white text-sm font-semibold animate-in fade-in slide-in-from-right-6 duration-300 ${config.bg}`}
     >
       {config.icon}
-      <span>{item.message}</span>
-      <button
-        onClick={() => onRemove(item.id)}
-        className="ml-2 opacity-70 hover:opacity-100 transition"
-      >
-        <X className="w-4 h-4" />
-      </button>
+      <div className="min-w-0 flex-1">
+        <span className="block leading-snug">{item.message}</span>
+        <div className="mt-2 h-1 rounded-full bg-white/20 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-white/80 transition-[width] duration-75 ease-linear"
+            style={{
+              width: `${Math.max(0, 100 - (elapsed / duration) * 100)}%`,
+            }}
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0 ml-2">
+        <span className="text-[11px] font-medium text-white/80 tabular-nums">
+          {Math.max(0, Math.ceil((duration - elapsed) / 1000))}s
+        </span>
+        <button
+          onClick={() => onRemove(item.id)}
+          className="opacity-70 hover:opacity-100 transition"
+          aria-label="Dismiss toast"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -149,7 +184,7 @@ function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
@@ -253,7 +288,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Toast stack */}
-      <div className="fixed top-6 right-6 z-[300] flex flex-col gap-3 items-end pointer-events-none">
+      <div className="fixed top-6 right-6 z-300 flex flex-col gap-3 items-end pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id} className="pointer-events-auto">
             <Toast item={t} onRemove={removeToast} />
