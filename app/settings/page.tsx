@@ -18,9 +18,15 @@ import {
   Search,
   Briefcase,
   Lock,
-  ShieldAlert
+  Eye,
+  EyeOff,
+  ShieldAlert,
 } from "lucide-react";
-import { useSettingsStore, BankDetail, LineItemPreset } from "@/lib/settingsStore";
+import {
+  useSettingsStore,
+  BankDetail,
+  LineItemPreset,
+} from "@/lib/settingsStore";
 import { useDialog } from "../components/Dialog";
 
 interface SettingsPageProps {
@@ -31,7 +37,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
   const router = useRouter();
   const { confirm, toast } = useDialog();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"company" | "banks" | "terms" | "presets" | "calculator">("company");
+  const [activeTab, setActiveTab] = useState<
+    "company" | "banks" | "terms" | "presets" | "calculator"
+  >("company");
 
   // Store Hooks
   const settings = useSettingsStore();
@@ -45,24 +53,30 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
   const [termsWithConstruction, setTermsWithConstruction] = useState("");
   const [termsPanelsOnly, setTermsPanelsOnly] = useState("");
-  const [termsAdditionalAccessories, setTermsAdditionalAccessories] = useState("");
+  const [termsAdditionalAccessories, setTermsAdditionalAccessories] =
+    useState("");
   const [termsWastageDisclaimer, setTermsWastageDisclaimer] = useState("");
 
   // Bank edit/add states
   const [editingBankId, setEditingBankId] = useState<string | null>(null);
-  const [bankForm, setBankForm] = useState({ bankName: "", branch: "", accountNo: "" });
+  const [bankForm, setBankForm] = useState({
+    bankName: "",
+    branch: "",
+    accountNo: "",
+  });
   const [showAddBank, setShowAddBank] = useState(false);
 
   // Presets edit/add states
   const [presetSearch, setPresetSearch] = useState("");
-  const [presetCategoryFilter, setPresetCategoryFilter] = useState<string>("all");
+  const [presetCategoryFilter, setPresetCategoryFilter] =
+    useState<string>("all");
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [presetForm, setPresetForm] = useState<Omit<LineItemPreset, "id">>({
     label: "",
     value: "",
     price: 0,
     mode: "simple",
-    category: "Wall Panels"
+    category: "Wall Panels",
   });
   const [showAddPreset, setShowAddPreset] = useState(false);
 
@@ -71,9 +85,13 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Toast/Feedback state
-  const [feedback, setFeedback] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -95,14 +113,20 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
     }
   }, [mounted, settings.company, settings.terms]);
 
-  const triggerFeedback = (message: string, type: "success" | "error" = "success") => {
+  const triggerFeedback = (
+    message: string,
+    type: "success" | "error" = "success",
+  ) => {
     setFeedback({ message, type });
     setTimeout(() => setFeedback(null), 3000);
   };
 
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginEmail === "adminIQ@japangedara.com" && loginPassword === "jpIQadmin@2026") {
+    if (
+      loginEmail === "adminIQ@japangedara.com" &&
+      loginPassword === "jpIQadmin@2026"
+    ) {
       setIsAuthenticated(true);
       setLoginError("");
     } else {
@@ -115,7 +139,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#E8973A] border-t-transparent" />
-          <p className="text-sm font-semibold text-gray-500">Loading Configuration...</p>
+          <p className="text-sm font-semibold text-gray-500">
+            Loading Configuration...
+          </p>
         </div>
       </div>
     );
@@ -128,7 +154,7 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
         <div className="flex-1 flex items-center justify-center pb-24">
           <div className="w-full max-w-md">
             <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 md:p-10 overflow-hidden relative">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#E8973A] to-[#be7221]" />
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-linear-to-r from-[#E8973A] to-[#be7221]" />
 
               <div className="flex justify-center mb-6">
                 <div className="w-16 h-16 bg-[#E8973A]/10 rounded-full flex items-center justify-center text-[#E8973A]">
@@ -136,12 +162,19 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                 </div>
               </div>
 
-              <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">Protected Access</h1>
-              <p className="text-center text-gray-500 text-sm mb-8">Please enter the administrative credentials to modify system parameters.</p>
+              <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">
+                Protected Access
+              </h1>
+              <p className="text-center text-gray-500 text-sm mb-8">
+                Please enter the administrative credentials to modify system
+                parameters.
+              </p>
 
               <form onSubmit={handleAuthSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">Email Address</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
+                    Email Address
+                  </label>
                   <input
                     type="email"
                     required
@@ -153,15 +186,33 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">Superuser Password</label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••••••"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] focus:bg-white outline-none transition-all duration-200 text-sm font-medium text-gray-900 shadow-inner"
-                  />
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 ml-1">
+                    Superuser Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showLoginPassword ? "text" : "password"}
+                      required
+                      placeholder="••••••••••••"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] focus:bg-white outline-none transition-all duration-200 text-sm font-medium text-gray-900 shadow-inner pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword((s) => !s)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      aria-label={
+                        showLoginPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showLoginPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {loginError && (
@@ -191,7 +242,7 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
     settings.updateCompany({
       name: companyName,
       address: companyAddress,
-      phones: companyPhones.filter(p => p.trim() !== ""),
+      phones: companyPhones.filter((p) => p.trim() !== ""),
       email: companyEmail,
       website: companyWebsite,
     });
@@ -223,7 +274,11 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
   const handleStartEditBank = (bank: BankDetail) => {
     setEditingBankId(bank.id);
-    setBankForm({ bankName: bank.bankName, branch: bank.branch, accountNo: bank.accountNo });
+    setBankForm({
+      bankName: bank.bankName,
+      branch: bank.branch,
+      accountNo: bank.accountNo,
+    });
   };
 
   const handleUpdateBank = (e: React.FormEvent) => {
@@ -239,7 +294,8 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
   const handleDeleteBank = async (id: string) => {
     const ok = await confirm({
       title: "Delete Bank Account",
-      message: "Are you sure you want to delete this bank account? This action cannot be undone.",
+      message:
+        "Are you sure you want to delete this bank account? This action cannot be undone.",
       confirmLabel: "Delete",
       variant: "danger",
     });
@@ -256,7 +312,13 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
       return;
     }
     settings.addPreset(presetForm);
-    setPresetForm({ label: "", value: "", price: 0, mode: "simple", category: "Wall Panels" });
+    setPresetForm({
+      label: "",
+      value: "",
+      price: 0,
+      mode: "simple",
+      category: "Wall Panels",
+    });
     setShowAddPreset(false);
     triggerFeedback("New preset created successfully!");
   };
@@ -268,7 +330,7 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
       value: p.value,
       price: p.price,
       mode: p.mode,
-      category: p.category
+      category: p.category,
     });
   };
 
@@ -277,7 +339,13 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
     if (editingPresetId) {
       settings.updatePreset(editingPresetId, presetForm);
       setEditingPresetId(null);
-      setPresetForm({ label: "", value: "", price: 0, mode: "simple", category: "Wall Panels" });
+      setPresetForm({
+        label: "",
+        value: "",
+        price: 0,
+        mode: "simple",
+        category: "Wall Panels",
+      });
       triggerFeedback("Pricing preset updated successfully!");
     }
   };
@@ -285,7 +353,8 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
   const handleDeletePreset = async (id: string) => {
     const ok = await confirm({
       title: "Delete Pricing Preset",
-      message: "Are you sure you want to delete this pricing preset? This cannot be undone.",
+      message:
+        "Are you sure you want to delete this pricing preset? This cannot be undone.",
       confirmLabel: "Delete",
       variant: "danger",
     });
@@ -298,7 +367,8 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
   const handleResetDefaults = async () => {
     const ok = await confirm({
       title: "Reset All Settings",
-      message: "Are you sure you want to reset ALL settings, pricing, bank details, and presets to factory defaults? This cannot be undone.",
+      message:
+        "Are you sure you want to reset ALL settings, pricing, bank details, and presets to factory defaults? This cannot be undone.",
       confirmLabel: "Reset Everything",
       cancelLabel: "Keep Settings",
       variant: "danger",
@@ -322,9 +392,11 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
   // Preset Filters
   const filteredPresets = settings.presets.filter((p) => {
-    const matchesSearch = p.label.toLowerCase().includes(presetSearch.toLowerCase()) ||
+    const matchesSearch =
+      p.label.toLowerCase().includes(presetSearch.toLowerCase()) ||
       p.value.toLowerCase().includes(presetSearch.toLowerCase());
-    const matchesCategory = presetCategoryFilter === "all" || p.category === presetCategoryFilter;
+    const matchesCategory =
+      presetCategoryFilter === "all" || p.category === presetCategoryFilter;
     return matchesSearch && matchesCategory;
   });
 
@@ -332,8 +404,13 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
     <div className="flex-1 flex flex-col bg-transparent font-sans text-slate-800">
       {/* Toast Feedback */}
       {feedback && (
-        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl px-5 py-3.5 shadow-xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${feedback.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
-          }`}>
+        <div
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl px-5 py-3.5 shadow-xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${
+            feedback.type === "success"
+              ? "bg-emerald-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
           <Check className="h-5 w-5" />
           <span className="text-sm font-semibold">{feedback.message}</span>
         </div>
@@ -343,8 +420,13 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
         {/* Settings Integrated Subbar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 bg-white/80 backdrop-blur-md p-6 rounded-2xl border border-gray-200/60 shadow-sm">
           <div>
-            <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">System Configuration</h2>
-            <p className="text-xs text-gray-500 mt-1">Configure company profiles, active bank details, and sidewall rates.</p>
+            <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">
+              System Configuration
+            </h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Configure company profiles, active bank details, and sidewall
+              rates.
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -364,10 +446,11 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               <button
                 type="button"
                 onClick={() => setActiveTab("company")}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${activeTab === "company"
-                  ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${
+                  activeTab === "company"
+                    ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                }`}
               >
                 <Building className="h-4 w-4" />
                 Company Profile
@@ -376,10 +459,11 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               <button
                 type="button"
                 onClick={() => setActiveTab("banks")}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${activeTab === "banks"
-                  ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${
+                  activeTab === "banks"
+                    ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                }`}
               >
                 <CreditCard className="h-4 w-4" />
                 Bank Accounts
@@ -388,10 +472,11 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               <button
                 type="button"
                 onClick={() => setActiveTab("terms")}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${activeTab === "terms"
-                  ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${
+                  activeTab === "terms"
+                    ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                }`}
               >
                 <FileText className="h-4 w-4" />
                 Terms & Conditions
@@ -400,10 +485,11 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               <button
                 type="button"
                 onClick={() => setActiveTab("presets")}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${activeTab === "presets"
-                  ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all duration-200 whitespace-nowrap lg:w-full cursor-pointer ${
+                  activeTab === "presets"
+                    ? "bg-[#E8973A] text-gray-900 shadow-md shadow-[#E8973A]/25"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                }`}
               >
                 <Briefcase className="h-4 w-4" />
                 Pricing Presets
@@ -414,18 +500,24 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
           {/* Active Tab Panel */}
           <div className="lg:col-span-3">
             <div className="rounded-2xl border border-slate-100 bg-white p-6 md:p-8 shadow-sm">
-
               {/* Tab 1: Company Profile */}
               {activeTab === "company" && (
                 <form onSubmit={handleSaveCompany} className="space-y-6">
                   <div className="border-b border-slate-100 pb-4">
-                    <h2 className="text-lg font-bold text-gray-900 tracking-tight">Company Profile Settings</h2>
-                    <p className="text-xs text-gray-500">Edit core company details printed as issuer on Invoices & Quotations.</p>
+                    <h2 className="text-lg font-bold text-gray-900 tracking-tight">
+                      Company Profile Settings
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      Edit core company details printed as issuer on Invoices &
+                      Quotations.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <div className="md:col-span-2">
-                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">Company Name</label>
+                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">
+                        Company Name
+                      </label>
                       <input
                         type="text"
                         value={companyName}
@@ -436,7 +528,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">Corporate Address</label>
+                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">
+                        Corporate Address
+                      </label>
                       <textarea
                         value={companyAddress}
                         onChange={(e) => setCompanyAddress(e.target.value)}
@@ -447,7 +541,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">Primary Contact Email</label>
+                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">
+                        Primary Contact Email
+                      </label>
                       <input
                         type="email"
                         value={companyEmail}
@@ -458,7 +554,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">Website Domain</label>
+                      <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2 ml-1">
+                        Website Domain
+                      </label>
                       <input
                         type="text"
                         value={companyWebsite}
@@ -470,10 +568,14 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
                     <div className="md:col-span-2">
                       <div className="flex items-center justify-between mb-2">
-                        <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Phone Numbers</label>
+                        <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">
+                          Phone Numbers
+                        </label>
                         <button
                           type="button"
-                          onClick={() => setCompanyPhones([...companyPhones, ""])}
+                          onClick={() =>
+                            setCompanyPhones([...companyPhones, ""])
+                          }
                           className="flex items-center gap-1 text-[11px] font-bold text-[#E8973A] hover:text-[#d4832b] hover:underline"
                         >
                           <Plus className="h-3 w-3" /> Add Phone
@@ -497,8 +599,14 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                             {companyPhones.length > 1 && (
                               <button
                                 type="button"
-                                onClick={() => setCompanyPhones(companyPhones.filter((_, idx) => idx !== pIdx))}
-                                className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                                onClick={() =>
+                                  setCompanyPhones(
+                                    companyPhones.filter(
+                                      (_, idx) => idx !== pIdx,
+                                    ),
+                                  )
+                                }
+                                className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -524,14 +632,23 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                     <div>
-                      <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Bank Details</h2>
-                      <p className="text-xs text-gray-500">Manage corporate bank accounts printed on the invoices & quotations footer.</p>
+                      <h2 className="text-lg font-semibold text-slate-900 tracking-tight">
+                        Bank Details
+                      </h2>
+                      <p className="text-xs text-gray-500">
+                        Manage corporate bank accounts printed on the invoices &
+                        quotations footer.
+                      </p>
                     </div>
                     {!showAddBank && !editingBankId && (
                       <button
                         onClick={() => {
                           setShowAddBank(true);
-                          setBankForm({ bankName: "", branch: "", accountNo: "" });
+                          setBankForm({
+                            bankName: "",
+                            branch: "",
+                            accountNo: "",
+                          });
                         }}
                         className="flex items-center gap-1.5 rounded-xl bg-[#E8973A] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#d4832b] active:scale-95 transition-all"
                       >
@@ -542,36 +659,62 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
                   {/* Add Bank Form */}
                   {showAddBank && (
-                    <form onSubmit={handleAddBank} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 animate-in slide-in-from-top-3 shadow-sm">
-                      <div className="text-xs font-semibold text-slate-800 uppercase tracking-wider border-b border-slate-200/60 pb-1.5">New Bank Account</div>
+                    <form
+                      onSubmit={handleAddBank}
+                      className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 animate-in slide-in-from-top-3 shadow-sm"
+                    >
+                      <div className="text-xs font-semibold text-slate-800 uppercase tracking-wider border-b border-slate-200/60 pb-1.5">
+                        New Bank Account
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Bank Name *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Bank Name *
+                          </label>
                           <input
                             type="text"
                             value={bankForm.bankName}
-                            onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })}
+                            onChange={(e) =>
+                              setBankForm({
+                                ...bankForm,
+                                bankName: e.target.value,
+                              })
+                            }
                             placeholder="e.g. Bank of Ceylon"
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Branch Name</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Branch Name
+                          </label>
                           <input
                             type="text"
                             value={bankForm.branch}
-                            onChange={(e) => setBankForm({ ...bankForm, branch: e.target.value })}
+                            onChange={(e) =>
+                              setBankForm({
+                                ...bankForm,
+                                branch: e.target.value,
+                              })
+                            }
                             placeholder="e.g. Thalawathugoda Branch"
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Account Number *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Account Number *
+                          </label>
                           <input
                             type="text"
                             value={bankForm.accountNo}
-                            onChange={(e) => setBankForm({ ...bankForm, accountNo: e.target.value })}
+                            onChange={(e) =>
+                              setBankForm({
+                                ...bankForm,
+                                accountNo: e.target.value,
+                              })
+                            }
                             placeholder="e.g. 92112847"
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                             required
@@ -598,34 +741,60 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
                   {/* Edit Bank Form */}
                   {editingBankId && (
-                    <form onSubmit={handleUpdateBank} className="bg-white p-5 rounded-2xl border border-amber-200 space-y-4 animate-in slide-in-from-top-3 shadow-sm">
-                      <div className="text-xs font-semibold text-amber-800 uppercase tracking-wider border-b border-amber-200 pb-1.5">Edit Bank Account</div>
+                    <form
+                      onSubmit={handleUpdateBank}
+                      className="bg-white p-5 rounded-2xl border border-amber-200 space-y-4 animate-in slide-in-from-top-3 shadow-sm"
+                    >
+                      <div className="text-xs font-semibold text-amber-800 uppercase tracking-wider border-b border-amber-200 pb-1.5">
+                        Edit Bank Account
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Bank Name *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Bank Name *
+                          </label>
                           <input
                             type="text"
                             value={bankForm.bankName}
-                            onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })}
+                            onChange={(e) =>
+                              setBankForm({
+                                ...bankForm,
+                                bankName: e.target.value,
+                              })
+                            }
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Branch Name</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Branch Name
+                          </label>
                           <input
                             type="text"
                             value={bankForm.branch}
-                            onChange={(e) => setBankForm({ ...bankForm, branch: e.target.value })}
+                            onChange={(e) =>
+                              setBankForm({
+                                ...bankForm,
+                                branch: e.target.value,
+                              })
+                            }
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Account Number *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Account Number *
+                          </label>
                           <input
                             type="text"
                             value={bankForm.accountNo}
-                            onChange={(e) => setBankForm({ ...bankForm, accountNo: e.target.value })}
+                            onChange={(e) =>
+                              setBankForm({
+                                ...bankForm,
+                                accountNo: e.target.value,
+                              })
+                            }
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                             required
                           />
@@ -652,17 +821,27 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                   {/* Accounts List */}
                   <div className="space-y-3">
                     {settings.bankDetails.length === 0 ? (
-                      <div className="text-center py-8 text-gray-400 text-sm">No bank details added. Click "Add Account" to create one.</div>
+                      <div className="text-center py-8 text-gray-400 text-sm">
+                        No bank details added. Click "Add Account" to create
+                        one.
+                      </div>
                     ) : (
                       settings.bankDetails.map((bank) => (
-                        <div key={bank.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all bg-white gap-3">
+                        <div
+                          key={bank.id}
+                          className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all bg-white gap-3"
+                        >
                           <div>
                             <div className="font-semibold text-slate-900 text-sm flex items-center gap-2">
                               <span className="h-2 w-2 rounded-full bg-[#E8973A]" />
                               {bank.bankName}
                             </div>
-                            <div className="text-xs text-slate-500 pl-4">{bank.branch || "Head Branch"}</div>
-                            <div className="text-xs text-slate-600 font-medium pl-4 mt-1">A/c No: {bank.accountNo}</div>
+                            <div className="text-xs text-slate-500 pl-4">
+                              {bank.branch || "Head Branch"}
+                            </div>
+                            <div className="text-xs text-slate-600 font-medium pl-4 mt-1">
+                              A/c No: {bank.accountNo}
+                            </div>
                           </div>
                           <div className="flex gap-2 self-end sm:self-center">
                             <button
@@ -691,24 +870,35 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               {activeTab === "terms" && (
                 <form onSubmit={handleSaveTerms} className="space-y-6">
                   <div className="border-b border-slate-100 pb-4">
-                    <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Terms & Conditions Settings</h2>
-                    <p className="text-xs text-gray-500">Configure corporate fine print and terms rendered on Invoices and Quotations.</p>
+                    <h2 className="text-lg font-semibold text-slate-900 tracking-tight">
+                      Terms & Conditions Settings
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      Configure corporate fine print and terms rendered on
+                      Invoices and Quotations.
+                    </p>
                   </div>
 
                   <div className="space-y-5">
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Payment Terms (With Construction)</label>
+                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">
+                        Payment Terms (With Construction)
+                      </label>
                       <input
                         type="text"
                         value={termsWithConstruction}
-                        onChange={(e) => setTermsWithConstruction(e.target.value)}
+                        onChange={(e) =>
+                          setTermsWithConstruction(e.target.value)
+                        }
                         className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-medium text-black bg-white shadow-sm"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Payment Terms (Panels Only - No Construction)</label>
+                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">
+                        Payment Terms (Panels Only - No Construction)
+                      </label>
                       <input
                         type="text"
                         value={termsPanelsOnly}
@@ -719,21 +909,29 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Additional Accessories clause</label>
+                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">
+                        Additional Accessories clause
+                      </label>
                       <input
                         type="text"
                         value={termsAdditionalAccessories}
-                        onChange={(e) => setTermsAdditionalAccessories(e.target.value)}
+                        onChange={(e) =>
+                          setTermsAdditionalAccessories(e.target.value)
+                        }
                         className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-medium text-black bg-white shadow-sm"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Wastage / Sizing Disclaimer</label>
+                      <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">
+                        Wastage / Sizing Disclaimer
+                      </label>
                       <textarea
                         value={termsWastageDisclaimer}
-                        onChange={(e) => setTermsWastageDisclaimer(e.target.value)}
+                        onChange={(e) =>
+                          setTermsWastageDisclaimer(e.target.value)
+                        }
                         rows={3}
                         className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-medium text-black bg-white shadow-sm resize-none"
                         required
@@ -743,7 +941,7 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
                   <button
                     type="submit"
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#E8973A] to-[#d4832b] px-6 py-3 text-sm font-semibold text-white shadow-md hover:shadow-lg active:scale-[0.98] transition-all duration-150"
+                    className="flex items-center gap-2 rounded-xl bg-linear-to-r from-[#E8973A] to-[#d4832b] px-6 py-3 text-sm font-semibold text-white shadow-md hover:shadow-lg active:scale-[0.98] transition-all duration-150"
                   >
                     <Save className="h-4.5 w-4.5" />
                     Save Terms Settings
@@ -756,14 +954,25 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                 <div className="space-y-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                     <div>
-                      <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Pricing Presets</h2>
-                      <p className="text-xs text-gray-500">Add, edit, or delete the siding panel types and prices dynamically available in invoice selectors.</p>
+                      <h2 className="text-lg font-semibold text-slate-900 tracking-tight">
+                        Pricing Presets
+                      </h2>
+                      <p className="text-xs text-gray-500">
+                        Add, edit, or delete the siding panel types and prices
+                        dynamically available in invoice selectors.
+                      </p>
                     </div>
                     {!showAddPreset && !editingPresetId && (
                       <button
                         onClick={() => {
                           setShowAddPreset(true);
-                          setPresetForm({ label: "", value: "", price: 0, mode: "simple", category: "Wall Panels" });
+                          setPresetForm({
+                            label: "",
+                            value: "",
+                            price: 0,
+                            mode: "simple",
+                            category: "Wall Panels",
+                          });
                         }}
                         className="flex items-center gap-1.5 rounded-xl bg-[#E8973A] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#d4832b] active:scale-95 transition-all self-start sm:self-center"
                       >
@@ -774,60 +983,104 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
                   {/* Add Preset Form */}
                   {showAddPreset && (
-                    <form onSubmit={handleAddPreset} className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 animate-in slide-in-from-top-3 shadow-sm">
-                      <div className="text-xs font-semibold text-slate-800 uppercase tracking-wider border-b border-slate-200/60 pb-1.5">New Pricing Preset</div>
+                    <form
+                      onSubmit={handleAddPreset}
+                      className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 animate-in slide-in-from-top-3 shadow-sm"
+                    >
+                      <div className="text-xs font-semibold text-slate-800 uppercase tracking-wider border-b border-slate-200/60 pb-1.5">
+                        New Pricing Preset
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Preset Label *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Preset Label *
+                          </label>
                           <input
                             type="text"
                             value={presetForm.label}
-                            onChange={(e) => setPresetForm({ ...presetForm, label: e.target.value })}
+                            onChange={(e) =>
+                              setPresetForm({
+                                ...presetForm,
+                                label: e.target.value,
+                              })
+                            }
                             placeholder='e.g. Wall Panels - 10ft (119")'
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Category *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Category *
+                          </label>
                           <select
                             value={presetForm.category}
-                            onChange={(e) => setPresetForm({ ...presetForm, category: e.target.value as any })}
+                            onChange={(e) =>
+                              setPresetForm({
+                                ...presetForm,
+                                category: e.target.value as any,
+                              })
+                            }
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                           >
                             <option value="Wall Panels">Wall Panels</option>
-                            <option value="Ceiling Panels">Ceiling Panels</option>
-                            <option value="Roofing Panels">Roofing Panels</option>
+                            <option value="Ceiling Panels">
+                              Ceiling Panels
+                            </option>
+                            <option value="Roofing Panels">
+                              Roofing Panels
+                            </option>
                             <option value="Other">Other / Custom</option>
                           </select>
                         </div>
                         <div className="md:col-span-2">
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Value/Description *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Value/Description *
+                          </label>
                           <input
                             type="text"
                             value={presetForm.value}
-                            onChange={(e) => setPresetForm({ ...presetForm, value: e.target.value })}
+                            onChange={(e) =>
+                              setPresetForm({
+                                ...presetForm,
+                                value: e.target.value,
+                              })
+                            }
                             placeholder='e.g. Wall Panels - Height: 10ft (119"), Width 17" (Covering 15")'
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Price (Rs.) *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Price (Rs.) *
+                          </label>
                           <input
                             type="number"
                             value={presetForm.price}
-                            onChange={(e) => setPresetForm({ ...presetForm, price: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) =>
+                              setPresetForm({
+                                ...presetForm,
+                                price: parseFloat(e.target.value) || 0,
+                              })
+                            }
                             onWheel={(e) => e.currentTarget.blur()}
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Pricing Mode *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Pricing Mode *
+                          </label>
                           <select
                             value={presetForm.mode}
-                            onChange={(e) => setPresetForm({ ...presetForm, mode: e.target.value as any })}
+                            onChange={(e) =>
+                              setPresetForm({
+                                ...presetForm,
+                                mode: e.target.value as any,
+                              })
+                            }
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                           >
                             <option value="simple">Sqft (Simple)</option>
@@ -856,58 +1109,102 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
                   {/* Edit Preset Form */}
                   {editingPresetId && (
-                    <form onSubmit={handleUpdatePreset} className="bg-white p-5 rounded-2xl border border-amber-200 space-y-4 animate-in slide-in-from-top-3 shadow-sm">
-                      <div className="text-xs font-semibold text-amber-800 uppercase tracking-wider border-b border-amber-200 pb-1.5">Edit Pricing Preset</div>
+                    <form
+                      onSubmit={handleUpdatePreset}
+                      className="bg-white p-5 rounded-2xl border border-amber-200 space-y-4 animate-in slide-in-from-top-3 shadow-sm"
+                    >
+                      <div className="text-xs font-semibold text-amber-800 uppercase tracking-wider border-b border-amber-200 pb-1.5">
+                        Edit Pricing Preset
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Preset Label *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Preset Label *
+                          </label>
                           <input
                             type="text"
                             value={presetForm.label}
-                            onChange={(e) => setPresetForm({ ...presetForm, label: e.target.value })}
+                            onChange={(e) =>
+                              setPresetForm({
+                                ...presetForm,
+                                label: e.target.value,
+                              })
+                            }
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Category *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Category *
+                          </label>
                           <select
                             value={presetForm.category}
-                            onChange={(e) => setPresetForm({ ...presetForm, category: e.target.value as any })}
+                            onChange={(e) =>
+                              setPresetForm({
+                                ...presetForm,
+                                category: e.target.value as any,
+                              })
+                            }
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                           >
                             <option value="Wall Panels">Wall Panels</option>
-                            <option value="Ceiling Panels">Ceiling Panels</option>
-                            <option value="Roofing Panels">Roofing Panels</option>
+                            <option value="Ceiling Panels">
+                              Ceiling Panels
+                            </option>
+                            <option value="Roofing Panels">
+                              Roofing Panels
+                            </option>
                             <option value="Other">Other / Custom</option>
                           </select>
                         </div>
                         <div className="md:col-span-2">
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Value/Description *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Value/Description *
+                          </label>
                           <input
                             type="text"
                             value={presetForm.value}
-                            onChange={(e) => setPresetForm({ ...presetForm, value: e.target.value })}
+                            onChange={(e) =>
+                              setPresetForm({
+                                ...presetForm,
+                                value: e.target.value,
+                              })
+                            }
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Price (Rs.) *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Price (Rs.) *
+                          </label>
                           <input
                             type="number"
                             value={presetForm.price}
-                            onChange={(e) => setPresetForm({ ...presetForm, price: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) =>
+                              setPresetForm({
+                                ...presetForm,
+                                price: parseFloat(e.target.value) || 0,
+                              })
+                            }
                             onWheel={(e) => e.currentTarget.blur()}
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">Pricing Mode *</label>
+                          <label className="block text-[10px] font-medium text-slate-600 uppercase mb-1">
+                            Pricing Mode *
+                          </label>
                           <select
                             value={presetForm.mode}
-                            onChange={(e) => setPresetForm({ ...presetForm, mode: e.target.value as any })}
+                            onChange={(e) =>
+                              setPresetForm({
+                                ...presetForm,
+                                mode: e.target.value as any,
+                              })
+                            }
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-black bg-white"
                           >
                             <option value="simple">Sqft (Simple)</option>
@@ -962,16 +1259,31 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                   {/* Presets List */}
                   <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
                     {filteredPresets.map((preset) => (
-                      <div key={preset.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl border border-slate-100 bg-white gap-3 hover:border-slate-200 hover:shadow-sm transition-all duration-150">
+                      <div
+                        key={preset.id}
+                        className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl border border-slate-100 bg-white gap-3 hover:border-slate-200 hover:shadow-sm transition-all duration-150"
+                      >
                         <div>
                           <div className="font-semibold text-slate-900 text-sm flex items-center gap-2">
-                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 uppercase tracking-wider">{preset.category}</span>
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 uppercase tracking-wider">
+                              {preset.category}
+                            </span>
                             {preset.label}
                           </div>
-                          <div className="text-[11px] text-slate-500 mt-1 font-medium">{preset.value}</div>
+                          <div className="text-[11px] text-slate-500 mt-1 font-medium">
+                            {preset.value}
+                          </div>
                           <div className="flex items-center gap-3 mt-1.5">
-                            <span className="text-[10px] bg-slate-100 text-slate-600 rounded px-1.5 py-0.5 font-medium capitalize">Mode: {preset.mode}</span>
-                            <span className="text-xs text-slate-900 font-semibold">Rs. {preset.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="text-[10px] bg-slate-100 text-slate-600 rounded px-1.5 py-0.5 font-medium capitalize">
+                              Mode: {preset.mode}
+                            </span>
+                            <span className="text-xs text-slate-900 font-semibold">
+                              Rs.{" "}
+                              {preset.price.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
                           </div>
                         </div>
                         <div className="flex gap-2 self-end sm:self-center">
@@ -993,7 +1305,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                       </div>
                     ))}
                     {filteredPresets.length === 0 && (
-                      <div className="text-center py-8 text-gray-400 text-sm">No matching presets found.</div>
+                      <div className="text-center py-8 text-gray-400 text-sm">
+                        No matching presets found.
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1003,8 +1317,13 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
               {activeTab === "calculator" && (
                 <div className="space-y-8 animate-in fade-in duration-200">
                   <div className="border-b border-slate-100 pb-4">
-                    <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Calculator Rates & Sizing Prices</h2>
-                    <p className="text-xs text-gray-500">Edit the pricing parameters utilized directly in the Quotation Calculator formulas.</p>
+                    <h2 className="text-lg font-semibold text-slate-900 tracking-tight">
+                      Calculator Rates & Sizing Prices
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      Edit the pricing parameters utilized directly in the
+                      Quotation Calculator formulas.
+                    </p>
                   </div>
 
                   {/* Section A: Simple Sqft Rates */}
@@ -1015,15 +1334,24 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Wall Panels (Sqft Rate)</label>
+                        <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">
+                          Wall Panels (Sqft Rate)
+                        </label>
                         <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-medium">Rs.</span>
+                          <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-medium">
+                            Rs.
+                          </span>
                           <input
                             type="number"
                             value={settings.pricingData.wall.simple.rate}
                             onChange={(e) => {
-                              settings.updateSimpleRate("wall", parseFloat(e.target.value) || 0);
-                              triggerFeedback("Wall panels simple rate updated!");
+                              settings.updateSimpleRate(
+                                "wall",
+                                parseFloat(e.target.value) || 0,
+                              );
+                              triggerFeedback(
+                                "Wall panels simple rate updated!",
+                              );
                             }}
                             onWheel={(e) => e.currentTarget.blur()}
                             className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-black bg-white"
@@ -1032,15 +1360,24 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Ceiling Panels (Sqft Rate)</label>
+                        <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">
+                          Ceiling Panels (Sqft Rate)
+                        </label>
                         <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-medium">Rs.</span>
+                          <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-medium">
+                            Rs.
+                          </span>
                           <input
                             type="number"
                             value={settings.pricingData.ceiling.simple.rate}
                             onChange={(e) => {
-                              settings.updateSimpleRate("ceiling", parseFloat(e.target.value) || 0);
-                              triggerFeedback("Ceiling panels simple rate updated!");
+                              settings.updateSimpleRate(
+                                "ceiling",
+                                parseFloat(e.target.value) || 0,
+                              );
+                              triggerFeedback(
+                                "Ceiling panels simple rate updated!",
+                              );
                             }}
                             onWheel={(e) => e.currentTarget.blur()}
                             className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-black bg-white"
@@ -1049,15 +1386,28 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Roofing (30mm Thickness Sqft Rate)</label>
+                        <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">
+                          Roofing (30mm Thickness Sqft Rate)
+                        </label>
                         <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-medium">Rs.</span>
+                          <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-medium">
+                            Rs.
+                          </span>
                           <input
                             type="number"
-                            value={settings.pricingData.roofing.simple.find(o => o.id === "roof-30mm")?.rate || 1450}
+                            value={
+                              settings.pricingData.roofing.simple.find(
+                                (o) => o.id === "roof-30mm",
+                              )?.rate || 1450
+                            }
                             onChange={(e) => {
-                              settings.updateRoofingSimpleRate("roof-30mm", parseFloat(e.target.value) || 0);
-                              triggerFeedback("Roofing 30mm simple rate updated!");
+                              settings.updateRoofingSimpleRate(
+                                "roof-30mm",
+                                parseFloat(e.target.value) || 0,
+                              );
+                              triggerFeedback(
+                                "Roofing 30mm simple rate updated!",
+                              );
                             }}
                             onWheel={(e) => e.currentTarget.blur()}
                             className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-black bg-white"
@@ -1066,15 +1416,28 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">Roofing (40/50mm Thickness Sqft Rate)</label>
+                        <label className="block text-xs font-medium text-slate-600 uppercase tracking-wider mb-1.5">
+                          Roofing (40/50mm Thickness Sqft Rate)
+                        </label>
                         <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-medium">Rs.</span>
+                          <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-medium">
+                            Rs.
+                          </span>
                           <input
                             type="number"
-                            value={settings.pricingData.roofing.simple.find(o => o.id === "roof-40-50mm")?.rate || 1650}
+                            value={
+                              settings.pricingData.roofing.simple.find(
+                                (o) => o.id === "roof-40-50mm",
+                              )?.rate || 1650
+                            }
                             onChange={(e) => {
-                              settings.updateRoofingSimpleRate("roof-40-50mm", parseFloat(e.target.value) || 0);
-                              triggerFeedback("Roofing 40/50mm simple rate updated!");
+                              settings.updateRoofingSimpleRate(
+                                "roof-40-50mm",
+                                parseFloat(e.target.value) || 0,
+                              );
+                              triggerFeedback(
+                                "Roofing 40/50mm simple rate updated!",
+                              );
                             }}
                             onWheel={(e) => e.currentTarget.blur()}
                             className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-black bg-white"
@@ -1093,18 +1456,32 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
                     {/* Wall hard panels */}
                     <div className="space-y-3">
-                      <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Wall Siding Panels</div>
+                      <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        Wall Siding Panels
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {settings.pricingData.wall.hard.map((panel) => (
-                          <div key={panel.id} className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm relative group">
+                          <div
+                            key={panel.id}
+                            className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm relative group"
+                          >
                             <div className="flex items-start justify-between mb-1.5 gap-1">
-                              <label className="block text-[11px] font-semibold text-slate-800 leading-tight">{panel.heightLabel}</label>
+                              <label className="block text-[11px] font-semibold text-slate-800 leading-tight">
+                                {panel.heightLabel}
+                              </label>
                               <button
                                 onClick={async () => {
-                                  const ok = await confirm({ title: "Delete Panel", message: `Permanently delete panel "${panel.heightLabel}" and all associated presets? This cannot be undone.`, confirmLabel: "Delete", variant: "danger" });
+                                  const ok = await confirm({
+                                    title: "Delete Panel",
+                                    message: `Permanently delete panel "${panel.heightLabel}" and all associated presets? This cannot be undone.`,
+                                    confirmLabel: "Delete",
+                                    variant: "danger",
+                                  });
                                   if (ok) {
                                     settings.deleteHardPanel("wall", panel.id);
-                                    triggerFeedback("Panel and associated presets deleted");
+                                    triggerFeedback(
+                                      "Panel and associated presets deleted",
+                                    );
                                   }
                                 }}
                                 className="opacity-0 group-hover:opacity-100 shrink-0 flex h-5 w-5 items-center justify-center rounded bg-red-50 text-red-500 hover:bg-red-100 transition-all duration-150"
@@ -1114,13 +1491,19 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                               </button>
                             </div>
                             <div className="relative">
-                              <span className="absolute left-3 top-2 text-xs font-medium text-slate-400">Rs.</span>
+                              <span className="absolute left-3 top-2 text-xs font-medium text-slate-400">
+                                Rs.
+                              </span>
                               <input
                                 type="number"
                                 value={panel.price}
                                 onChange={(e) => {
-                                  settings.updateHardPanel("wall", panel.id, { price: parseFloat(e.target.value) || 0 });
-                                  triggerFeedback(`Wall ${panel.heightLabel} price updated!`);
+                                  settings.updateHardPanel("wall", panel.id, {
+                                    price: parseFloat(e.target.value) || 0,
+                                  });
+                                  triggerFeedback(
+                                    `Wall ${panel.heightLabel} price updated!`,
+                                  );
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
                                 className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white font-semibold text-black"
@@ -1130,23 +1513,37 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                             {/* Dynamic Dimension Control */}
                             <div className="grid grid-cols-2 gap-2 mt-2">
                               <div>
-                                <label className="text-[9px] font-semibold uppercase text-slate-400">Width (")</label>
+                                <label className="text-[9px] font-semibold uppercase text-slate-400">
+                                  Width (")
+                                </label>
                                 <input
                                   type="number"
                                   step="0.5"
                                   value={panel.actualWidth}
-                                  onChange={(e) => settings.updateHardPanel("wall", panel.id, { actualWidth: parseFloat(e.target.value) || 0 })}
+                                  onChange={(e) =>
+                                    settings.updateHardPanel("wall", panel.id, {
+                                      actualWidth:
+                                        parseFloat(e.target.value) || 0,
+                                    })
+                                  }
                                   onWheel={(e) => e.currentTarget.blur()}
                                   className="w-full px-2 py-1 border border-slate-100 rounded bg-slate-50 text-[11px] font-medium text-slate-700"
                                 />
                               </div>
                               <div>
-                                <label className="text-[9px] font-semibold uppercase text-slate-400">Covering (")</label>
+                                <label className="text-[9px] font-semibold uppercase text-slate-400">
+                                  Covering (")
+                                </label>
                                 <input
                                   type="number"
                                   step="0.5"
                                   value={panel.coveringSpace}
-                                  onChange={(e) => settings.updateHardPanel("wall", panel.id, { coveringSpace: parseFloat(e.target.value) || 0 })}
+                                  onChange={(e) =>
+                                    settings.updateHardPanel("wall", panel.id, {
+                                      coveringSpace:
+                                        parseFloat(e.target.value) || 0,
+                                    })
+                                  }
                                   onWheel={(e) => e.currentTarget.blur()}
                                   className="w-full px-2 py-1 border border-slate-100 rounded bg-slate-50 text-[11px] font-medium text-slate-700"
                                 />
@@ -1159,18 +1556,35 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
                     {/* Ceiling hard panels */}
                     <div className="space-y-3 pt-4">
-                      <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Ceiling Siding Panels</div>
+                      <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        Ceiling Siding Panels
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {settings.pricingData.ceiling.hard.map((panel) => (
-                          <div key={panel.id} className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm relative group">
+                          <div
+                            key={panel.id}
+                            className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm relative group"
+                          >
                             <div className="flex items-start justify-between mb-1.5 gap-1">
-                              <label className="block text-[11px] font-semibold text-slate-800 leading-tight">{panel.heightLabel}</label>
+                              <label className="block text-[11px] font-semibold text-slate-800 leading-tight">
+                                {panel.heightLabel}
+                              </label>
                               <button
                                 onClick={async () => {
-                                  const ok = await confirm({ title: "Delete Panel", message: `Permanently delete panel "${panel.heightLabel}" and all associated presets? This cannot be undone.`, confirmLabel: "Delete", variant: "danger" });
+                                  const ok = await confirm({
+                                    title: "Delete Panel",
+                                    message: `Permanently delete panel "${panel.heightLabel}" and all associated presets? This cannot be undone.`,
+                                    confirmLabel: "Delete",
+                                    variant: "danger",
+                                  });
                                   if (ok) {
-                                    settings.deleteHardPanel("ceiling", panel.id);
-                                    triggerFeedback("Panel and associated presets deleted");
+                                    settings.deleteHardPanel(
+                                      "ceiling",
+                                      panel.id,
+                                    );
+                                    triggerFeedback(
+                                      "Panel and associated presets deleted",
+                                    );
                                   }
                                 }}
                                 className="opacity-0 group-hover:opacity-100 shrink-0 flex h-5 w-5 items-center justify-center rounded bg-red-50 text-red-500 hover:bg-red-100 transition-all duration-150"
@@ -1180,13 +1594,21 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                               </button>
                             </div>
                             <div className="relative">
-                              <span className="absolute left-3 top-2 text-xs font-medium text-slate-400">Rs.</span>
+                              <span className="absolute left-3 top-2 text-xs font-medium text-slate-400">
+                                Rs.
+                              </span>
                               <input
                                 type="number"
                                 value={panel.price}
                                 onChange={(e) => {
-                                  settings.updateHardPanel("ceiling", panel.id, { price: parseFloat(e.target.value) || 0 });
-                                  triggerFeedback(`Ceiling ${panel.heightLabel} price updated!`);
+                                  settings.updateHardPanel(
+                                    "ceiling",
+                                    panel.id,
+                                    { price: parseFloat(e.target.value) || 0 },
+                                  );
+                                  triggerFeedback(
+                                    `Ceiling ${panel.heightLabel} price updated!`,
+                                  );
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
                                 className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white font-semibold text-black"
@@ -1196,23 +1618,45 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                             {/* Dynamic Dimension Control */}
                             <div className="grid grid-cols-2 gap-2 mt-2">
                               <div>
-                                <label className="text-[9px] font-semibold uppercase text-slate-400">Width (")</label>
+                                <label className="text-[9px] font-semibold uppercase text-slate-400">
+                                  Width (")
+                                </label>
                                 <input
                                   type="number"
                                   step="0.5"
                                   value={panel.actualWidth}
-                                  onChange={(e) => settings.updateHardPanel("ceiling", panel.id, { actualWidth: parseFloat(e.target.value) || 0 })}
+                                  onChange={(e) =>
+                                    settings.updateHardPanel(
+                                      "ceiling",
+                                      panel.id,
+                                      {
+                                        actualWidth:
+                                          parseFloat(e.target.value) || 0,
+                                      },
+                                    )
+                                  }
                                   onWheel={(e) => e.currentTarget.blur()}
                                   className="w-full px-2 py-1 border border-slate-100 rounded bg-slate-50 text-[11px] font-medium text-slate-700"
                                 />
                               </div>
                               <div>
-                                <label className="text-[9px] font-semibold uppercase text-slate-400">Covering (")</label>
+                                <label className="text-[9px] font-semibold uppercase text-slate-400">
+                                  Covering (")
+                                </label>
                                 <input
                                   type="number"
                                   step="0.5"
                                   value={panel.coveringSpace}
-                                  onChange={(e) => settings.updateHardPanel("ceiling", panel.id, { coveringSpace: parseFloat(e.target.value) || 0 })}
+                                  onChange={(e) =>
+                                    settings.updateHardPanel(
+                                      "ceiling",
+                                      panel.id,
+                                      {
+                                        coveringSpace:
+                                          parseFloat(e.target.value) || 0,
+                                      },
+                                    )
+                                  }
                                   onWheel={(e) => e.currentTarget.blur()}
                                   className="w-full px-2 py-1 border border-slate-100 rounded bg-slate-50 text-[11px] font-medium text-slate-700"
                                 />
@@ -1225,18 +1669,35 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
 
                     {/* Roofing hard panels */}
                     <div className="space-y-3 pt-4">
-                      <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Roofing Siding Panels (30mm & 40mm Varieties)</div>
+                      <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        Roofing Siding Panels (30mm & 40mm Varieties)
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {settings.pricingData.roofing.hard.map((panel) => (
-                          <div key={panel.id} className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm relative group">
+                          <div
+                            key={panel.id}
+                            className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm relative group"
+                          >
                             <div className="flex items-start justify-between mb-1.5 gap-1">
-                              <label className="block text-[11px] font-semibold text-slate-800 leading-tight">{panel.heightLabel}</label>
+                              <label className="block text-[11px] font-semibold text-slate-800 leading-tight">
+                                {panel.heightLabel}
+                              </label>
                               <button
                                 onClick={async () => {
-                                  const ok = await confirm({ title: "Delete Panel", message: `Permanently delete panel "${panel.heightLabel}" and all associated presets? This cannot be undone.`, confirmLabel: "Delete", variant: "danger" });
+                                  const ok = await confirm({
+                                    title: "Delete Panel",
+                                    message: `Permanently delete panel "${panel.heightLabel}" and all associated presets? This cannot be undone.`,
+                                    confirmLabel: "Delete",
+                                    variant: "danger",
+                                  });
                                   if (ok) {
-                                    settings.deleteHardPanel("roofing", panel.id);
-                                    triggerFeedback("Panel and associated presets deleted");
+                                    settings.deleteHardPanel(
+                                      "roofing",
+                                      panel.id,
+                                    );
+                                    triggerFeedback(
+                                      "Panel and associated presets deleted",
+                                    );
                                   }
                                 }}
                                 className="opacity-0 group-hover:opacity-100 shrink-0 flex h-5 w-5 items-center justify-center rounded bg-red-50 text-red-500 hover:bg-red-100 transition-all duration-150"
@@ -1246,13 +1707,21 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                               </button>
                             </div>
                             <div className="relative">
-                              <span className="absolute left-3 top-2 text-xs font-medium text-slate-400">Rs.</span>
+                              <span className="absolute left-3 top-2 text-xs font-medium text-slate-400">
+                                Rs.
+                              </span>
                               <input
                                 type="number"
                                 value={panel.price}
                                 onChange={(e) => {
-                                  settings.updateHardPanel("roofing", panel.id, { price: parseFloat(e.target.value) || 0 });
-                                  triggerFeedback(`Roofing ${panel.heightLabel} price updated!`);
+                                  settings.updateHardPanel(
+                                    "roofing",
+                                    panel.id,
+                                    { price: parseFloat(e.target.value) || 0 },
+                                  );
+                                  triggerFeedback(
+                                    `Roofing ${panel.heightLabel} price updated!`,
+                                  );
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
                                 className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white font-semibold text-black"
@@ -1262,23 +1731,45 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                             {/* Dynamic Dimension Control */}
                             <div className="grid grid-cols-2 gap-2 mt-2">
                               <div>
-                                <label className="text-[9px] font-semibold uppercase text-slate-400">Width (")</label>
+                                <label className="text-[9px] font-semibold uppercase text-slate-400">
+                                  Width (")
+                                </label>
                                 <input
                                   type="number"
                                   step="0.5"
                                   value={panel.actualWidth}
-                                  onChange={(e) => settings.updateHardPanel("roofing", panel.id, { actualWidth: parseFloat(e.target.value) || 0 })}
+                                  onChange={(e) =>
+                                    settings.updateHardPanel(
+                                      "roofing",
+                                      panel.id,
+                                      {
+                                        actualWidth:
+                                          parseFloat(e.target.value) || 0,
+                                      },
+                                    )
+                                  }
                                   onWheel={(e) => e.currentTarget.blur()}
                                   className="w-full px-2 py-1 border border-slate-100 rounded bg-slate-50 text-[11px] font-medium text-slate-700"
                                 />
                               </div>
                               <div>
-                                <label className="text-[9px] font-semibold uppercase text-slate-400">Covering (")</label>
+                                <label className="text-[9px] font-semibold uppercase text-slate-400">
+                                  Covering (")
+                                </label>
                                 <input
                                   type="number"
                                   step="0.5"
                                   value={panel.coveringSpace}
-                                  onChange={(e) => settings.updateHardPanel("roofing", panel.id, { coveringSpace: parseFloat(e.target.value) || 0 })}
+                                  onChange={(e) =>
+                                    settings.updateHardPanel(
+                                      "roofing",
+                                      panel.id,
+                                      {
+                                        coveringSpace:
+                                          parseFloat(e.target.value) || 0,
+                                      },
+                                    )
+                                  }
                                   onWheel={(e) => e.currentTarget.blur()}
                                   className="w-full px-2 py-1 border border-slate-100 rounded bg-slate-50 text-[11px] font-medium text-slate-700"
                                 />
@@ -1288,11 +1779,9 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
                         ))}
                       </div>
                     </div>
-
                   </div>
                 </div>
               )}
-
             </div>
           </div>
         </div>

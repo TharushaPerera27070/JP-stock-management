@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Lock, Mail, Loader2, AlertTriangle } from "lucide-react";
+import {
+  X,
+  Lock,
+  Mail,
+  Loader2,
+  AlertTriangle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 // TODO: Import your new database authentication logic here
 // import { signIn } from "@/app/lib/new_database_auth";
 
@@ -22,6 +30,7 @@ export default function AdminAuthDialog({
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (!isOpen) return null;
 
@@ -38,10 +47,10 @@ export default function AdminAuthDialog({
     try {
       // TODO: Implement your new database authentication logic here
       // Example: await signIn(email, password);
-      
+
       // Simulating a successful login for now
       console.log("Authenticating with new DB...");
-      
+
       setEmail("");
       setPassword("");
       onSuccess();
@@ -61,7 +70,7 @@ export default function AdminAuthDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 animate-in fade-in duration-200">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/40 backdrop-blur-sm"
@@ -96,7 +105,8 @@ export default function AdminAuthDialog({
               Admin Authorization Required
             </h3>
             <p className="mt-1.5 text-sm text-gray-500 max-w-xs leading-relaxed">
-              Please enter your admin credentials to {actionType || "perform this action"}.
+              Please enter your admin credentials to{" "}
+              {actionType || "perform this action"}.
             </p>
           </div>
 
@@ -135,14 +145,27 @@ export default function AdminAuthDialog({
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
                   disabled={isLoading}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent transition-all"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  disabled={isLoading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
 
@@ -157,9 +180,7 @@ export default function AdminAuthDialog({
                   Authenticating...
                 </>
               ) : (
-                <>
-                  Verify & Continue
-                </>
+                <>Verify & Continue</>
               )}
             </button>
           </form>

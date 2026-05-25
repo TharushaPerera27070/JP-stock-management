@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { LockKeyhole } from "lucide-react";
+import { LockKeyhole, Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 
 const VALID_EMAIL = "japangedara01@gmail.com";
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -90,15 +91,29 @@ export default function LoginPage() {
             <label className="mb-1.5 ml-1 block text-[11px] font-bold uppercase tracking-wider text-gray-500">
               Password
             </label>
-            <input
-              type="password"
-              placeholder="••••••••••••"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-sm font-medium text-gray-900 outline-none transition-all duration-200 shadow-inner placeholder:text-gray-400 focus:border-[#E8973A] focus:bg-white focus:ring-2 focus:ring-[#E8973A]"
-              autoComplete="current-password"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••••••"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-sm font-medium text-gray-900 outline-none transition-all duration-200 shadow-inner placeholder:text-gray-400 focus:border-[#E8973A] focus:bg-white focus:ring-2 focus:ring-[#E8973A] pr-10"
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
 
           {error && (

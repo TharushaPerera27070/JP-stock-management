@@ -692,15 +692,17 @@ function QuotationEditor({
                   {items.map((item, index) => {
                     const activeCat =
                       item.category ||
-                      (item.description === ""
-                        ? "wall"
-                        : item.description.toLowerCase().includes("wall")
+                      (item.unit === "Transport"
+                        ? "transport"
+                        : item.description === ""
                           ? "wall"
-                          : item.description.toLowerCase().includes("ceiling")
-                            ? "ceiling"
-                            : item.description.toLowerCase().includes("roof")
-                              ? "roofing"
-                              : "custom");
+                          : item.description.toLowerCase().includes("wall")
+                            ? "wall"
+                            : item.description.toLowerCase().includes("ceiling")
+                              ? "ceiling"
+                              : item.description.toLowerCase().includes("roof")
+                                ? "roofing"
+                                : "custom");
                     return (
                       <div
                         key={index}
@@ -712,34 +714,92 @@ function QuotationEditor({
                             Component Type
                           </label>
                           <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg max-w-md">
-                            {["wall", "ceiling", "roofing", "custom"].map(
-                              (cat) => {
-                                const label =
-                                  cat === "wall"
-                                    ? "Wall"
-                                    : cat === "ceiling"
-                                      ? "Ceiling"
-                                      : cat === "roofing"
-                                        ? "Roofing"
+                            {[
+                              "wall",
+                              "ceiling",
+                              "roofing",
+                              "transport",
+                              "custom",
+                            ].map((cat) => {
+                              const label =
+                                cat === "wall"
+                                  ? "Wall"
+                                  : cat === "ceiling"
+                                    ? "Ceiling"
+                                    : cat === "roofing"
+                                      ? "Roofing"
+                                      : cat === "transport"
+                                        ? "Transport"
                                         : "Custom";
-                                return (
-                                  <button
-                                    key={cat}
-                                    type="button"
-                                    onClick={() => {
-                                      const groupTitle =
-                                        cat === "wall"
-                                          ? "Walls"
-                                          : cat === "ceiling"
-                                            ? "Roof & Ceilling"
-                                            : cat === "roofing"
-                                              ? "Roofing"
+                              return (
+                                <button
+                                  key={cat}
+                                  type="button"
+                                  onClick={() => {
+                                    const groupTitle =
+                                      cat === "wall"
+                                        ? "Walls"
+                                        : cat === "ceiling"
+                                          ? "Roof & Ceilling"
+                                          : cat === "roofing"
+                                            ? "Roofing"
+                                            : cat === "transport"
+                                              ? "Transport"
                                               : "Custom Works";
-                                      const unit =
-                                        cat === "custom" ? "Item" : "Sqft";
-                                      if (cat === "custom") {
+                                    const unit =
+                                      cat === "custom"
+                                        ? "Item"
+                                        : cat === "transport"
+                                          ? "Transport"
+                                          : "Sqft";
+                                    if (cat === "custom") {
+                                      updateItem(index, {
+                                        category: "custom",
+                                        groupTitle,
+                                        unit,
+                                        size: "",
+                                        description: "",
+                                        unitPrice: 0,
+                                        discount: 0,
+                                      });
+                                    } else if (cat === "transport") {
+                                      updateItem(index, {
+                                        category: "transport",
+                                        groupTitle,
+                                        unit,
+                                        size: "",
+                                        description: "",
+                                        quantity: 1,
+                                        unitPrice: 0,
+                                        discount: 0,
+                                      });
+                                    } else {
+                                      const catLabel =
+                                        cat === "wall"
+                                          ? "Wall Panels"
+                                          : cat === "ceiling"
+                                            ? "Ceiling Panels"
+                                            : "Roofing Panels";
+                                      const options = LINE_ITEM_PRESETS.filter(
+                                        (p) =>
+                                          p.category === catLabel &&
+                                          (p.mode === pricingMode ||
+                                            p.mode === "all"),
+                                      );
+                                      const defaultOpt = options[0];
+                                      if (defaultOpt) {
                                         updateItem(index, {
-                                          category: "custom",
+                                          category: cat,
+                                          groupTitle,
+                                          unit,
+                                          size: defaultOpt.value,
+                                          description: "",
+                                          unitPrice: defaultOpt.price,
+                                          discount: 0,
+                                        });
+                                      } else {
+                                        updateItem(index, {
+                                          category: cat,
                                           groupTitle,
                                           unit,
                                           size: "",
@@ -747,116 +807,86 @@ function QuotationEditor({
                                           unitPrice: 0,
                                           discount: 0,
                                         });
-                                      } else {
-                                        const catLabel =
-                                          cat === "wall"
-                                            ? "Wall Panels"
-                                            : cat === "ceiling"
-                                              ? "Ceiling Panels"
-                                              : "Roofing Panels";
-                                        const options =
-                                          LINE_ITEM_PRESETS.filter(
-                                            (p) =>
-                                              p.category === catLabel &&
-                                              (p.mode === pricingMode ||
-                                                p.mode === "all"),
-                                          );
-                                        const defaultOpt = options[0];
-                                        if (defaultOpt) {
-                                          updateItem(index, {
-                                            category: cat,
-                                            groupTitle,
-                                            unit,
-                                            size: defaultOpt.value,
-                                            description: "",
-                                            unitPrice: defaultOpt.price,
-                                            discount: 0,
-                                          });
-                                        } else {
-                                          updateItem(index, {
-                                            category: cat,
-                                            groupTitle,
-                                            unit,
-                                            size: "",
-                                            description: "",
-                                            unitPrice: 0,
-                                            discount: 0,
-                                          });
-                                        }
                                       }
-                                    }}
-                                    className={`flex-1 min-w-15 px-2.5 py-1 rounded-md text-xs font-semibold transition-all duration-150 ${
-                                      activeCat === cat
-                                        ? "bg-white text-gray-800 shadow-sm font-bold"
-                                        : "text-gray-500 hover:text-gray-800"
-                                    }`}
-                                  >
-                                    {label}
-                                  </button>
-                                );
-                              },
-                            )}
+                                    }
+                                  }}
+                                  className={`flex-1 min-w-15 px-2.5 py-1 rounded-md text-xs font-semibold transition-all duration-150 ${
+                                    activeCat === cat
+                                      ? "bg-white text-gray-800 shadow-sm font-bold"
+                                      : "text-gray-500 hover:text-gray-800"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
 
                         {/* Row 1.5: Group Title customization */}
-                        <div className="w-full">
-                          <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
-                            Group Header / Category Name
-                          </label>
-                          {activeCat !== "custom" ? (
-                            <select
-                              value={item.groupTitle || ""}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                const selected = LINE_ITEM_PRESETS.find(
-                                  (p) => p.label === val || p.value === val,
-                                );
-                                if (selected) {
-                                  updateItem(index, {
-                                    groupTitle: selected.label,
-                                    size: selected.value,
-                                    description: "",
-                                    unitPrice: selected.price,
-                                  });
-                                } else {
-                                  updateItem(index, "groupTitle", val);
+                        {activeCat !== "transport" && (
+                          <div className="w-full">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
+                              Group Header / Category Name
+                            </label>
+                            {activeCat !== "custom" ? (
+                              <select
+                                value={item.groupTitle || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const selected = LINE_ITEM_PRESETS.find(
+                                    (p) => p.label === val || p.value === val,
+                                  );
+                                  if (selected) {
+                                    updateItem(index, {
+                                      groupTitle: selected.label,
+                                      size: selected.value,
+                                      description: "",
+                                      unitPrice: selected.price,
+                                    });
+                                  } else {
+                                    updateItem(index, "groupTitle", val);
+                                  }
+                                }}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm text-gray-900 font-normal"
+                              >
+                                <option value="">Select Option...</option>
+                                {(() => {
+                                  const catLabel =
+                                    activeCat === "wall"
+                                      ? "Wall Panels"
+                                      : activeCat === "ceiling"
+                                        ? "Ceiling Panels"
+                                        : "Roofing Panels";
+                                  return LINE_ITEM_PRESETS.filter(
+                                    (preset) =>
+                                      preset.category === catLabel &&
+                                      (preset.mode === pricingMode ||
+                                        preset.mode === "all"),
+                                  ).map((preset, pIdx) => (
+                                    <option key={pIdx} value={preset.label}>
+                                      {preset.label}
+                                    </option>
+                                  ));
+                                })()}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="e.g. Custom Works, Doors, Windows..."
+                                value={item.groupTitle || ""}
+                                onChange={(e) =>
+                                  updateItem(
+                                    index,
+                                    "groupTitle",
+                                    e.target.value,
+                                  )
                                 }
-                              }}
-                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm text-gray-900 font-normal"
-                            >
-                              <option value="">Select Option...</option>
-                              {(() => {
-                                const catLabel =
-                                  activeCat === "wall"
-                                    ? "Wall Panels"
-                                    : activeCat === "ceiling"
-                                      ? "Ceiling Panels"
-                                      : "Roofing Panels";
-                                return LINE_ITEM_PRESETS.filter(
-                                  (preset) =>
-                                    preset.category === catLabel &&
-                                    (preset.mode === pricingMode ||
-                                      preset.mode === "all"),
-                                ).map((preset, pIdx) => (
-                                  <option key={pIdx} value={preset.label}>
-                                    {preset.label}
-                                  </option>
-                                ));
-                              })()}
-                            </select>
-                          ) : (
-                            <input
-                              type="text"
-                              placeholder="e.g. Custom Works, Doors, Windows..."
-                              value={item.groupTitle || ""}
-                              onChange={(e) =>
-                                updateItem(index, "groupTitle", e.target.value)
-                              }
-                              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm text-gray-900 font-normal"
-                            />
-                          )}
-                        </div>
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm text-gray-900 font-normal"
+                              />
+                            )}
+                          </div>
+                        )}
 
                         {/* Row 2: Pricing Boxes Inline (Side-by-Side) */}
                         <div className="flex flex-col md:flex-row gap-3.5 md:items-end w-full">
@@ -875,40 +905,43 @@ function QuotationEditor({
                                 <option value="Item">Item</option>
                                 <option value="Sqft">Sqft</option>
                                 <option value="Nos">Nos</option>
-                                <option value="Transport">Transport</option>
                                 {/* <option value="Lft">Lft</option>
                                 <option value="Set">Set</option> */}
                               </select>
                             </div>
                           )}
-                          <div
-                            className={`flex-1 ${enableDiscounts ? "md:w-16" : "md:w-24"}`}
-                          >
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
-                              Qty
-                            </label>
-                            <input
-                              type="number"
-                              placeholder="Qty"
-                              value={item.quantity === 0 ? "" : item.quantity}
-                              onChange={(e) =>
-                                updateItem(
-                                  index,
-                                  "quantity",
-                                  parseFloat(e.target.value) || 0,
-                                )
-                              }
-                              onFocus={(e) => e.target.select()}
-                              onWheel={(e) => e.currentTarget.blur()}
-                              className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-normal text-center text-gray-900"
-                            />
-                          </div>
+                          {activeCat !== "transport" && (
+                            <div
+                              className={`flex-1 ${enableDiscounts ? "md:w-16" : "md:w-24"}`}
+                            >
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
+                                Qty
+                              </label>
+                              <input
+                                type="number"
+                                placeholder="Qty"
+                                value={item.quantity === 0 ? "" : item.quantity}
+                                onChange={(e) =>
+                                  updateItem(
+                                    index,
+                                    "quantity",
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                }
+                                onFocus={(e) => e.target.select()}
+                                onWheel={(e) => e.currentTarget.blur()}
+                                className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-normal text-center text-gray-900"
+                              />
+                            </div>
+                          )}
 
                           <div
                             className={`flex-1 ${enableDiscounts ? "md:w-24" : "md:w-32"}`}
                           >
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
-                              Rate (Rs.)
+                              {activeCat === "transport"
+                                ? "Amount (Rs.)"
+                                : "Rate (Rs.)"}
                             </label>
                             <input
                               type="number"
@@ -927,7 +960,7 @@ function QuotationEditor({
                             />
                           </div>
 
-                          {enableDiscounts && (
+                          {enableDiscounts && activeCat !== "transport" && (
                             <div className="flex-1 md:w-20 animate-in fade-in duration-100">
                               <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                                 Disc (%)
@@ -962,7 +995,7 @@ function QuotationEditor({
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                               Subtotal
                             </label>
-                            <div className="w-full px-3 py-2.5 bg-gray-100 rounded-lg text-sm font-bold text-gray-700 text-right h-[42px] flex items-center justify-end">
+                            <div className="w-full px-3 py-2.5 bg-gray-100 rounded-lg text-sm font-bold text-gray-700 text-right h-10.5 flex items-center justify-end">
                               Rs.{" "}
                               {(
                                 item.quantity *
@@ -979,7 +1012,7 @@ function QuotationEditor({
                             <button
                               type="button"
                               onClick={() => removeItem(index)}
-                              className="px-3.5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-150 text-sm font-semibold h-[42px] flex items-center justify-center border border-transparent shadow-sm active:scale-[0.98]"
+                              className="px-3.5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-150 text-sm font-semibold h-10.5 flex items-center justify-center border border-transparent shadow-sm active:scale-[0.98]"
                               title="Remove item"
                             >
                               Remove
@@ -994,9 +1027,11 @@ function QuotationEditor({
                           </label>
                           <textarea
                             placeholder={
-                              activeCat === "custom"
-                                ? "Type custom description..."
-                                : "Add details or customize description..."
+                              activeCat === "transport"
+                                ? "Enter transport details..."
+                                : activeCat === "custom"
+                                  ? "Type custom description..."
+                                  : "Add details or customize description..."
                             }
                             value={item.description}
                             onChange={(e) =>
@@ -1063,7 +1098,7 @@ function QuotationEditor({
             <button
               type="button"
               onClick={() => setShowPreview(true)}
-              className="w-full bg-[#E8973A] hover:bg-[#d4832b] text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-lg shadow-[#E8973A]/20 active:scale-[0.98] text-base flex justify-center items-center font-bold"
+              className="w-full bg-[#E8973A] hover:bg-[#d4832b] text-white font-semibold py-3.5 px-4 rounded-xl transition shadow-lg shadow-[#E8973A]/20 active:scale-[0.98] text-base flex justify-center items-center"
             >
               Preview & Export
             </button>
@@ -1073,9 +1108,9 @@ function QuotationEditor({
 
       {/* Preview Modal */}
       {showPreview && (
-        <div className="fixed inset-y-0 right-0 left-0 md:left-64 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 md:p-6 z-[100] animate-in fade-in duration-250">
+        <div className="fixed inset-y-0 right-0 left-0 md:left-64 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 md:p-6 z-100 animate-in fade-in duration-250">
           <div className="bg-white rounded-2xl max-w-5xl w-full h-[90vh] shadow-2xl border border-gray-100 flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden">
-            <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center z-10">
+            <div className="shrink-0 bg-white/95 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center z-10">
               <div className="flex flex-col">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#E8973A] mb-0.5">
                   Live Document
@@ -1106,7 +1141,7 @@ function QuotationEditor({
                 </button>
                 <button
                   onClick={handleDirectPrint}
-                  className="flex-1 sm:flex-initial px-5 py-2.5 bg-gradient-to-r from-[#E8973A] to-[#d4832b] hover:from-[#d4832b] hover:to-[#be7221] text-white rounded-xl transition-all duration-150 font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
+                  className="flex-1 sm:flex-initial px-5 py-2.5 bg-linear-to-r from-[#E8973A] to-[#d4832b] hover:from-[#d4832b] hover:to-[#be7221] text-white rounded-xl transition-all duration-150 font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   <svg
                     className="w-4 h-4"
@@ -1218,7 +1253,7 @@ function QuotationPreview({
       <div className="flex-1 flex flex-col">
         {/* Header Section */}
         <div className="flex justify-between items-start w-full mb-4">
-          <div className="w-[140px]">
+          <div className="w-35">
             <img
               src="/Japan-Gedara-Logo-removebg-preview.png"
               alt="Logo"
@@ -1232,7 +1267,7 @@ function QuotationPreview({
             <span className="text-base font-bold text-black mb-1">
               {company.name.toUpperCase()}
             </span>
-            <span className="text-[10px] text-black max-w-[200px] leading-tight mb-1 font-medium">
+            <span className="text-[10px] text-black max-w-50 leading-tight mb-1 font-medium">
               {company.address}
             </span>
             <span className="text-base font-extrabold text-black uppercase tracking-wider mt-4">
@@ -1242,13 +1277,13 @@ function QuotationPreview({
         </div>
 
         {/* Divider */}
-        <div className="h-[2px] bg-black mb-6 w-full rounded-full" />
+        <div className="h-0.5 bg-black mb-6 w-full rounded-full" />
 
         {/* Client & Meta Info */}
         <div className="flex mb-8 w-full">
           <div className="flex-1">
             <div className="flex mb-1 items-center">
-              <span className="font-bold w-[90px] text-[10px] text-black">
+              <span className="font-bold w-22.5 text-[10px] text-black">
                 DATE:
               </span>
               <span className="text-[10px] text-black">
@@ -1256,13 +1291,13 @@ function QuotationPreview({
               </span>
             </div>
             <div className="flex mb-1 items-center">
-              <span className="font-bold w-[90px] text-[10px] text-black">
+              <span className="font-bold w-22.5 text-[10px] text-black">
                 QUOTATION NO:
               </span>
               <span className="text-[10px] text-black">{quotationNo}</span>
             </div>
             <div className="flex mb-1 items-center">
-              <span className="font-bold w-[90px] text-[10px] text-black">
+              <span className="font-bold w-22.5 text-[10px] text-black">
                 VALID UNTIL:
               </span>
               <span className="text-[10px] text-black">
@@ -1272,7 +1307,7 @@ function QuotationPreview({
           </div>
           <div className="flex-1">
             <div className="flex mb-1 items-center">
-              <span className="font-bold w-[90px] text-[10px] text-black">
+              <span className="font-bold w-22.5 text-[10px] text-black">
                 NAME:
               </span>
               <span className="text-[10px] text-black flex-1">
@@ -1280,7 +1315,7 @@ function QuotationPreview({
               </span>
             </div>
             <div className="flex mb-1 items-center">
-              <span className="font-bold w-[90px] text-[10px] text-black">
+              <span className="font-bold w-22.5 text-[10px] text-black">
                 ADDRESS:
               </span>
               <span className="text-[10px] text-black flex-1">
@@ -1288,7 +1323,7 @@ function QuotationPreview({
               </span>
             </div>
             <div className="flex mb-1 items-center">
-              <span className="font-bold w-[120px] text-[10px] text-black">
+              <span className="font-bold w-30 text-[10px] text-black">
                 CONTACT NUMBER:
               </span>
               <span className="text-[10px] text-black flex-1">
@@ -1412,20 +1447,26 @@ function QuotationPreview({
                       ? "Roof & Ceilling"
                       : item.category === "roofing"
                         ? "Roofing"
-                        : "Custom Works");
+                        : item.category === "transport"
+                          ? "Transport"
+                          : "Custom Works");
                 const itemUnit =
-                  item.category === "custom"
-                    ? item.unit || "Item"
-                    : pricingMode === "simple"
-                      ? "Sqft"
-                      : "Nos";
+                  item.category === "transport"
+                    ? "Transport"
+                    : item.category === "custom"
+                      ? item.unit || "Item"
+                      : pricingMode === "simple"
+                        ? "Sqft"
+                        : "Nos";
                 const displayQty =
-                  itemUnit.toLowerCase() === "item" &&
-                  (item.quantity === 1 || item.quantity === 0)
+                  item.category === "transport"
                     ? ""
-                    : item.quantity.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      });
+                    : itemUnit.toLowerCase() === "item" &&
+                        (item.quantity === 1 || item.quantity === 0)
+                      ? ""
+                      : item.quantity.toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                        });
 
                 return (
                   <React.Fragment key={index}>
@@ -1672,7 +1713,7 @@ function QuotationPreview({
       <div className="flex justify-between items-start mt-auto mb-24 w-full">
         {/* Terms & Conditions */}
         <div className="flex-1 mr-5">
-          <div className="h-[30px] border-b border-black mb-2 flex items-end pb-1">
+          <div className="h-7.5 border-b border-black mb-2 flex items-end pb-1">
             <span className="font-bold text-[11px] text-black">
               Terms & Conditions
             </span>
@@ -1693,7 +1734,7 @@ function QuotationPreview({
 
         {/* Bank Details */}
         <div className="flex-1">
-          <div className="h-[30px] border-b border-black mb-2 flex items-end pb-1">
+          <div className="h-7.5 border-b border-black mb-2 flex items-end pb-1">
             <span className="font-bold text-[10px] text-black">
               *All Payments should be made in favour of {company.name}
             </span>
