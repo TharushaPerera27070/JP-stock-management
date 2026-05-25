@@ -706,11 +706,16 @@ export default function InventoryDashboard() {
               editId={editDocId}
               inventory={items}
               customers={customers}
+              onCreateReceipt={() => {
+                setActiveTab("create-receipt");
+                setEditDocId(undefined);
+                setIsViewOnly(false);
+              }}
               onBack={() => {
                 setActiveTab("orders");
                 setEditDocId(undefined);
               }}
-              onSave={async (savedOrder) => {
+              onSave={async (savedOrder, options) => {
                 try {
                   if (editDocId) {
                     await saveOrderToFirestore({
@@ -743,8 +748,10 @@ export default function InventoryDashboard() {
                       type: "success",
                     });
                   }
-                  setActiveTab("orders");
-                  setEditDocId(undefined);
+                  if (!options?.stayOnPage) {
+                    setActiveTab("orders");
+                    setEditDocId(undefined);
+                  }
                 } catch (e) {
                   console.error("Failed to save order:", e);
                   toast({

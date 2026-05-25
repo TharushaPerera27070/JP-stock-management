@@ -27,7 +27,11 @@ interface LineItem {
 
 interface AddOrderProps {
   onBack: () => void;
-  onSave: (order: OrderData) => void;
+  onSave: (
+    order: OrderData,
+    options?: { stayOnPage?: boolean },
+  ) => Promise<void> | void;
+  onCreateReceipt?: () => void;
   inventory: InventoryItem[];
   customers: Customer[];
   editId?: string;
@@ -36,6 +40,7 @@ interface AddOrderProps {
 export default function AddOrder({
   onBack,
   onSave,
+  onCreateReceipt,
   inventory,
   customers,
   editId,
@@ -51,6 +56,7 @@ export default function AddOrder({
       <OrderEditor
         onBack={onBack}
         onSave={onSave}
+        onCreateReceipt={onCreateReceipt}
         inventory={inventory}
         customers={customers}
         editId={editId}
@@ -62,12 +68,17 @@ export default function AddOrder({
 function OrderEditor({
   onBack,
   onSave,
+  onCreateReceipt,
   inventory,
   customers,
   editId,
 }: {
   onBack: () => void;
-  onSave: (order: OrderData) => void;
+  onSave: (
+    order: OrderData,
+    options?: { stayOnPage?: boolean },
+  ) => Promise<void> | void;
+  onCreateReceipt?: () => void;
   inventory: InventoryItem[];
   customers: Customer[];
   editId?: string;
@@ -111,6 +122,7 @@ function OrderEditor({
   const [invoiceType, setInvoiceType] = useState<"normal" | "cash">("normal");
   const [status, setStatus] = useState<OrderData["status"]>("Pending");
   const [isLoading, setIsLoading] = useState(false);
+  const [showReceiptPrompt, setShowReceiptPrompt] = useState(false);
 
   const handleInvoiceTypeChange = (type: "normal" | "cash") => {
     setInvoiceType(type);
@@ -254,7 +266,7 @@ function OrderEditor({
 
   const { toast } = useDialog();
 
-  const handleSave = async () => {
+  const handleSave = async (showPromptAfterSave = false) => {
     if (!clientName) {
       toast({ message: "Please enter a client name.", type: "error" });
       return;
@@ -326,7 +338,13 @@ function OrderEditor({
         timestamp: new Date().toISOString(),
       };
 
-      onSave(finalOrderData);
+      const shouldStayOnPage = showPromptAfterSave && !editId;
+      await onSave(finalOrderData, { stayOnPage: shouldStayOnPage });
+
+      if (showPromptAfterSave && !editId) {
+        setShowPreview(false);
+        setShowReceiptPrompt(true);
+      }
     } catch (err) {
       console.error("Save error:", err);
       toast({
@@ -340,12 +358,17 @@ function OrderEditor({
 
   const handleExportPDF = async () => {
     await exportToPDF("invoice-preview", `${invoiceNo}.pdf`);
-    await handleSave();
+    await handleSave(true);
   };
 
   const handleDirectPrint = async () => {
     await exportToPrinter("invoice-preview");
-    await handleSave();
+    await handleSave(true);
+  };
+
+  const handleCreateReceiptClick = () => {
+    setShowReceiptPrompt(false);
+    onCreateReceipt?.();
   };
 
   const total = calculateTotal();
@@ -379,7 +402,7 @@ function OrderEditor({
                 Preview Invoice
               </button>
               <button
-                onClick={handleSave}
+                  onClick={() => handleSave()}
                 className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-[#E8973A] hover:bg-[#d4832b] text-gray-900 font-bold transition-all shadow-lg shadow-[#E8973A]/20 text-sm cursor-pointer"
               >
                 <Save className="w-4 h-4" /> Save Order
@@ -1028,7 +1051,7 @@ function OrderEditor({
             </button>
             <button
               type="button"
-              onClick={handleSave}
+              onClick={() => handleSave()}
               className="w-full bg-[#E8973A] hover:bg-[#d4832b] text-white font-bold py-3.5 px-4 rounded-xl transition shadow-lg shadow-[#E8973A]/20 active:scale-[0.98] text-base flex justify-center items-center"
             >
               Save Order
@@ -1039,7 +1062,7 @@ function OrderEditor({
 
       {/* Preview Dialog Modal */}
       {showPreview && (
-        <div className="fixed inset-y-0 right-0 left-0 md:left-64 z-100 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4">
+        <div className="fixed inset-y-0 right-0 left-0 md:left-64 z-400 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="p-4 bg-gray-50 border-b border-gray-150 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
               <div>
@@ -1127,6 +1150,30 @@ function OrderEditor({
                 />
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showReceiptPrompt && (
+        <div className="fixed bottom-6 right-6 z-500 w-[calc(100%-2rem)] max-w-md rounded-2xl border border-[#E8973A]/30 bg-white/95 backdrop-blur-sm p-4 shadow-2xl">
+          <p className="text-sm font-semibold text-gray-900">
+            Invoice saved successfully. Do you want to create a receipt now?
+          </p>
+          <div className="mt-3 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowReceiptPrompt(false)}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              Not Now
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateReceiptClick}
+              className="rounded-lg bg-[#E8973A] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#d4832b]"
+            >
+              Create Receipt
+            </button>
           </div>
         </div>
       )}
