@@ -266,6 +266,33 @@ function OrderEditor({
 
   const { toast } = useDialog();
 
+  const getPanelCategory = (panelType: string) => {
+    const normalized = panelType.trim().toLowerCase();
+    if (normalized.includes("ceiling")) return "ceiling";
+    if (normalized.includes("roof")) return "roofing";
+    return "wall";
+  };
+
+  const getPanelLabel = (panel: InventoryItem) => {
+    const design = panel.design?.trim() || panel.panelId;
+    const typeLabel = panel.panelType?.trim() || "Panel";
+    const sizeLabel = panel.size?.trim() ? ` • ${panel.size.trim()}` : "";
+    return `${design} ${typeLabel} Panel${sizeLabel}`;
+  };
+
+  const getPanelDisplayLabel = (panel: InventoryItem) => {
+    const baseLabel = getPanelLabel(panel);
+    const colorLabel = panel.color?.trim() ? ` • ${panel.color.trim()}` : "";
+    return `${baseLabel}${colorLabel}`;
+  };
+
+  const getPanelsForCategory = (category: "wall" | "ceiling" | "roofing") =>
+    inventory.filter((panel) => getPanelCategory(panel.panelType) === category);
+
+  const getDefaultPanelForCategory = (
+    category: "wall" | "ceiling" | "roofing",
+  ) => getPanelsForCategory(category)[0];
+
   const handleSave = async (showPromptAfterSave = false) => {
     if (!clientName) {
       toast({ message: "Please enter a client name.", type: "error" });
@@ -722,27 +749,22 @@ function OrderEditor({
                                         discount: 0,
                                       });
                                     } else {
-                                      const catLabel =
-                                        cat === "wall"
-                                          ? "Wall Panels"
-                                          : cat === "ceiling"
-                                            ? "Ceiling Panels"
-                                            : "Roofing Panels";
-                                      const options = LINE_ITEM_PRESETS.filter(
-                                        (p) =>
-                                          p.category === catLabel &&
-                                          (p.mode === pricingMode ||
-                                            p.mode === "all"),
-                                      );
-                                      const defaultOpt = options[0];
-                                      if (defaultOpt) {
+                                      const panelCategory = cat as
+                                        | "wall"
+                                        | "ceiling"
+                                        | "roofing";
+                                      const defaultPanel =
+                                        getDefaultPanelForCategory(
+                                          panelCategory,
+                                        );
+                                      if (defaultPanel) {
                                         updateItem(index, {
                                           category: cat,
                                           groupTitle,
                                           unit,
-                                          size: defaultOpt.value,
+                                          size: defaultPanel.size || "",
                                           description: "",
-                                          unitPrice: defaultOpt.price,
+                                          unitPrice: defaultPanel.price || 0,
                                           discount: 0,
                                         });
                                       } else {
@@ -778,46 +800,49 @@ function OrderEditor({
                               Group Header / Category Name
                             </label>
                             {activeCat !== "custom" ? (
-                              <select
-                                value={item.groupTitle || ""}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  const selected = LINE_ITEM_PRESETS.find(
-                                    (p) => p.label === val || p.value === val,
-                                  );
-                                  if (selected) {
-                                    updateItem(index, {
-                                      groupTitle: selected.label,
-                                      size: selected.value,
-                                      description: "",
-                                      unitPrice: selected.price,
-                                    });
-                                  } else {
-                                    updateItem(index, "groupTitle", val);
-                                  }
-                                }}
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm text-gray-900 font-normal"
-                              >
-                                <option value="">Select Option...</option>
-                                {(() => {
-                                  const catLabel =
-                                    activeCat === "wall"
-                                      ? "Wall Panels"
-                                      : activeCat === "ceiling"
-                                        ? "Ceiling Panels"
-                                        : "Roofing Panels";
-                                  return LINE_ITEM_PRESETS.filter(
-                                    (preset) =>
-                                      preset.category === catLabel &&
-                                      (preset.mode === pricingMode ||
-                                        preset.mode === "all"),
-                                  ).map((preset, pIdx) => (
-                                    <option key={pIdx} value={preset.label}>
-                                      {preset.label}
-                                    </option>
-                                  ));
-                                })()}
-                              </select>
+                              (() => {
+                                const panelCategory = activeCat as
+                                  | "wall"
+                                  | "ceiling"
+                                  | "roofing";
+                                return (
+                                  <select
+                                    value={item.groupTitle || ""}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const selectedPanel = inventory.find(
+                                        (panel) =>
+                                          getPanelLabel(panel) === val ||
+                                          panel.id === val,
+                                      );
+                                      if (selectedPanel) {
+                                        updateItem(index, {
+                                          groupTitle:
+                                            getPanelLabel(selectedPanel),
+                                          size: selectedPanel.size || "",
+                                          description: "",
+                                          unitPrice: selectedPanel.price || 0,
+                                        });
+                                      } else {
+                                        updateItem(index, "groupTitle", val);
+                                      }
+                                    }}
+                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#E8973A] outline-none text-sm text-gray-900 font-normal"
+                                  >
+                                    <option value="">Select Option...</option>
+                                    {getPanelsForCategory(panelCategory).map(
+                                      (panel, panelIndex) => (
+                                        <option
+                                          key={panel.id || panelIndex}
+                                          value={getPanelLabel(panel)}
+                                        >
+                                          {getPanelDisplayLabel(panel)}
+                                        </option>
+                                      ),
+                                    )}
+                                  </select>
+                                );
+                              })()
                             ) : (
                               <input
                                 type="text"
