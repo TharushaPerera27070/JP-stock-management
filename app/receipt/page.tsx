@@ -348,7 +348,7 @@ function ReceiptEditor({
                   value={amountInWords}
                   onChange={(e) => setAmountInWords(e.target.value)}
                   rows={1}
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-medium text-gray-700 italic transition-all resize-none placeholder-gray-400 text-gray-500"
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#E8973A] outline-none text-sm font-medium text-gray-700 italic transition-all resize-none placeholder-gray-400"
                   placeholder="Will populate automatically..."
                 />
               </div>
@@ -402,7 +402,7 @@ function ReceiptEditor({
                     type="text"
                     value={referenceNo}
                     onChange={(e) => setReferenceNo(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-base transition-all h-[94px] placeholder-gray-400 text-gray-500"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#E8973A] focus:border-transparent outline-none text-base transition-all h-23.5 placeholder-gray-400 text-gray-500"
                     placeholder="Reference Number (if any)"
                   />
                 </div>
@@ -438,7 +438,7 @@ function ReceiptEditor({
 
       {/* Preview Modal */}
       {showPreview && (
-        <div className="fixed inset-y-0 right-0 left-0 md:left-64 z-[100] bg-gray-900/80 backdrop-blur-sm flex justify-center items-center p-4">
+        <div className="fixed inset-y-0 right-0 left-0 md:left-64 z-100 bg-gray-900/80 backdrop-blur-sm flex justify-center items-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="p-4 bg-white border-b border-gray-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
               <div>
@@ -566,7 +566,7 @@ function ReceiptPreview({
       <div className="flex-1 flex flex-col">
         {/* Header Section duplicated from Invoice */}
         <div className="flex justify-between items-start w-full mb-4">
-          <div className="w-[140px]">
+          <div className="w-35">
             <img
               src="/Japan-Gedara-Logo-removebg-preview.png"
               alt="Logo"
@@ -580,7 +580,7 @@ function ReceiptPreview({
             <span className="text-base font-bold text-black mb-1">
               {company.name.toUpperCase()}
             </span>
-            <span className="text-[10px] text-black max-w-[200px] leading-tight mb-1">
+            <span className="text-[10px] text-black max-w-50 leading-tight mb-1">
               {company.address}
             </span>
             <span className="text-base font-extrabold text-black uppercase tracking-wider mt-4">
@@ -590,13 +590,13 @@ function ReceiptPreview({
         </div>
 
         {/* Divider */}
-        <div className="h-[2px] bg-black mb-6 w-full rounded-full" />
+        <div className="h-0.5 bg-black mb-6 w-full rounded-full" />
 
         {/* Information Bar */}
         <div className="flex mb-8 w-full">
           <div className="flex-1">
             <div className="flex mb-1 items-center">
-              <span className="font-bold w-[90px] text-[10px] text-black">
+              <span className="font-bold w-22.5 text-[10px] text-black">
                 DATE:
               </span>
               <span className="text-[10px] text-black">
@@ -604,7 +604,7 @@ function ReceiptPreview({
               </span>
             </div>
             <div className="flex mb-1 items-center">
-              <span className="font-bold w-[90px] text-[10px] text-black">
+              <span className="font-bold w-22.5 text-[10px] text-black">
                 RECEIPT NO:
               </span>
               <span className="text-[10px] text-black">
@@ -613,7 +613,7 @@ function ReceiptPreview({
             </div>
             {invoiceQuotationNo && (
               <div className="flex mb-1 items-center">
-                <span className="font-bold w-[90px] text-[10px] text-black uppercase">
+                <span className="font-bold w-22.5 text-[10px] text-black uppercase">
                   INV / QUO NO:
                 </span>
                 <span className="text-[10px] text-black uppercase">
@@ -625,7 +625,7 @@ function ReceiptPreview({
 
           <div className="flex-1">
             <div className="flex mb-1 items-center">
-              <span className="font-bold w-[120px] text-[10px] text-black">
+              <span className="font-bold w-30 text-[10px] text-black">
                 RECEIVED FROM:
               </span>
               <span className="text-[10px] text-black flex-1 uppercase">
@@ -633,7 +633,7 @@ function ReceiptPreview({
               </span>
             </div>
             <div className="flex mb-1 items-center">
-              <span className="font-bold w-[120px] text-[10px] text-black">
+              <span className="font-bold w-30 text-[10px] text-black">
                 PAYMENT METHOD:
               </span>
               <span className="text-[10px] text-black flex-1 uppercase">
