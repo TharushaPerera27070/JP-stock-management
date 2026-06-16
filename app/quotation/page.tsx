@@ -1467,6 +1467,11 @@ function QuotationPreview({
                       : item.quantity.toLocaleString(undefined, {
                           maximumFractionDigits: 2,
                         });
+                const realAmount = item.quantity * item.unitPrice;
+                const discountAmount =
+                  item.discount && item.discount > 0
+                    ? realAmount * (item.discount / 100)
+                    : 0;
 
                 return (
                   <React.Fragment key={index}>
@@ -1593,14 +1598,21 @@ function QuotationPreview({
                           textAlign: "right",
                         }}
                       >
-                        {(
-                          item.quantity *
-                          item.unitPrice *
-                          (1 - (item.discount || 0) / 100)
-                        ).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                        <div>
+                          {realAmount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                          {discountAmount > 0 && (
+                            <div style={{ fontSize: "9px", lineHeight: "1.2" }}>
+                              -Rs.{" "}
+                              {discountAmount.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   </React.Fragment>

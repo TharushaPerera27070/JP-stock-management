@@ -35,6 +35,17 @@ export interface OrderData {
   timestamp?: string;
 }
 
+export interface ReceiptDraft {
+  invoiceQuotationNo?: string;
+  receivedFrom?: string;
+  amount?: number;
+  paymentFor?: string;
+  paymentMethod?: 'Cash' | 'Cheque' | 'Bank Transfer' | 'Card';
+  referenceNo?: string;
+  issueDate?: string;
+  preparedBy?: string;
+}
+
 export interface Customer {
   id: string;
   name: string;

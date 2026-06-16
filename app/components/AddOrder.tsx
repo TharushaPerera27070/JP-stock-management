@@ -13,6 +13,7 @@ import { useSettingsStore } from "@/lib/settingsStore";
 import { useDialog } from "./Dialog";
 import { getOrdersFromFirestore } from "@/lib/firestoreService";
 import CustomerSearchPicker from "./CustomerSearchPicker";
+import type { ReceiptDraft } from "../types";
 
 interface LineItem {
   description: string;
@@ -31,7 +32,7 @@ interface AddOrderProps {
     order: OrderData,
     options?: { stayOnPage?: boolean },
   ) => Promise<void> | void;
-  onCreateReceipt?: () => void;
+  onCreateReceipt?: (draft: ReceiptDraft) => void;
   inventory: InventoryItem[];
   customers: Customer[];
   editId?: string;
@@ -78,7 +79,7 @@ function OrderEditor({
     order: OrderData,
     options?: { stayOnPage?: boolean },
   ) => Promise<void> | void;
-  onCreateReceipt?: () => void;
+  onCreateReceipt?: (draft: ReceiptDraft) => void;
   inventory: InventoryItem[];
   customers: Customer[];
   editId?: string;
@@ -395,7 +396,16 @@ function OrderEditor({
 
   const handleCreateReceiptClick = () => {
     setShowReceiptPrompt(false);
-    onCreateReceipt?.();
+    onCreateReceipt?.({
+      invoiceQuotationNo: invoiceNo,
+      receivedFrom: clientName,
+      amount: total,
+      paymentFor: `Payment against invoice ${invoiceNo}`,
+      paymentMethod: "Cash",
+      referenceNo: "",
+      issueDate,
+      preparedBy,
+    });
   };
 
   const total = calculateTotal();

@@ -33,6 +33,7 @@ import QuotationPage from "./quotation/page";
 import ReceiptPage from "./receipt/page";
 import SettingsPage from "./settings/page";
 import { InventoryItem, OrderData, Customer } from "./types";
+import type { ReceiptDraft } from "./types";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -60,6 +61,8 @@ export default function InventoryDashboard() {
   >("invoices");
   const [editDocId, setEditDocId] = useState<string | undefined>(undefined);
   const [isViewOnly, setIsViewOnly] = useState<boolean>(false);
+  const [pendingReceiptDraft, setPendingReceiptDraft] =
+    useState<ReceiptDraft | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -592,7 +595,13 @@ export default function InventoryDashboard() {
             <QuotationPage onBack={() => setActiveTab("documents")} />
           )}
           {activeTab === "create-receipt" && (
-            <ReceiptPage onBack={() => setActiveTab("documents")} />
+            <ReceiptPage
+              initialDraft={pendingReceiptDraft}
+              onBack={() => {
+                setPendingReceiptDraft(null);
+                setActiveTab("documents");
+              }}
+            />
           )}
           {activeTab === "edit-invoice" && (
             <InvoicePage
@@ -706,7 +715,8 @@ export default function InventoryDashboard() {
               editId={editDocId}
               inventory={items}
               customers={customers}
-              onCreateReceipt={() => {
+              onCreateReceipt={(draft) => {
+                setPendingReceiptDraft(draft);
                 setActiveTab("create-receipt");
                 setEditDocId(undefined);
                 setIsViewOnly(false);
