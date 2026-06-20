@@ -33,6 +33,15 @@ export default function Inventory({
   handleDeletePanel,
   formatLKR,
 }: InventoryProps) {
+  const filtered = items.filter(
+    (i) =>
+      `${i.design} ${i.panelType} Panel`
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      i.panelId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (i.color || "").toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-6">
@@ -63,50 +72,64 @@ export default function Inventory({
           </button>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white backdrop-blur-sm shadow-2xl overflow-x-auto scrollbar-thin scrollbar-track-white scrollbar-thumb-white">
-          <table className="w-full min-w-250 text-left text-sm whitespace-nowrap">
-            <thead className="bg-gray-50/40 text-gray-500 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 font-medium tracking-wider">Photo</th>
-                <th className="px-6 py-4 font-medium tracking-wider">
-                  Product
-                </th>
-                <th className="px-6 py-4 font-medium tracking-wider">
-                  Panel ID
-                </th>
-                <th className="px-6 py-4 font-medium tracking-wider">Type</th>
-                <th className="px-6 py-4 font-medium tracking-wider">
-                  Specifications
-                </th>
-                <th className="px-6 py-4 font-medium tracking-wider">Status</th>
-                <th className="px-6 py-4 font-medium tracking-wider text-right">
-                  Qty
-                </th>
-                <th className="px-6 py-4 font-medium tracking-wider text-right">
-                  Price/Sqft
-                </th>
-                <th className="px-6 py-4 font-medium tracking-wider text-center">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {items
-                .filter(
-                  (i) =>
-                    `${i.design} ${i.panelType} Panel`
-                      .toLowerCase()
-                      .includes(searchQuery.toLowerCase()) ||
-                    i.panelId.toLowerCase().includes(searchQuery.toLowerCase()),
-                )
-                .map((item) => (
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-2xl overflow-x-auto scrollbar-thin scrollbar-track-white scrollbar-thumb-white">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center px-6">
+              <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mb-4 border border-gray-100 text-gray-400">
+                <Box className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">
+                No panels found
+              </h3>
+              <p className="text-gray-500 text-sm mt-1 max-w-sm">
+                {searchQuery
+                  ? "Try a different search term."
+                  : "Add your first panel to get started."}
+              </p>
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-gray-50/40 text-gray-500 border-b border-gray-200">
+                <tr>
+                  <th className="px-5 py-4 font-medium tracking-wider">
+                    Photo
+                  </th>
+                  <th className="px-5 py-4 font-medium tracking-wider">
+                    Design
+                  </th>
+                  <th className="px-5 py-4 font-medium tracking-wider">
+                    Color
+                  </th>
+                  <th className="px-5 py-4 font-medium tracking-wider">
+                    Panel ID
+                  </th>
+                  <th className="px-5 py-4 font-medium tracking-wider">
+                    Size / Specifications
+                  </th>
+                  <th className="px-5 py-4 font-medium tracking-wider text-right">
+                    Qty
+                  </th>
+                  <th className="px-5 py-4 font-medium tracking-wider text-right">
+                    Total Area (ft²)
+                  </th>
+                  <th className="px-5 py-4 font-medium tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-5 py-4 font-medium tracking-wider text-center">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filtered.map((item) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-white transition-colors group"
+                    className="hover:bg-gray-50/40 transition-colors group"
                   >
-                    <td className="px-6 py-4">
-                      {item.imageUrl && item.imageUrl.trim() ? (
-                        <div className="w-12 h-12 rounded-lg border border-gray-300 overflow-hidden bg-gray-900/50">
+                    {/* Photo */}
+                    <td className="px-5 py-4">
+                      {item.imageUrl?.trim() ? (
+                        <div className="w-12 h-12 rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
                           <Image
                             src={item.imageUrl.trim()}
                             alt={item.design}
@@ -117,87 +140,105 @@ export default function Inventory({
                           />
                         </div>
                       ) : (
-                        <div className="w-12 h-12 rounded-lg border border-gray-300 bg-white/50 flex items-center justify-center">
-                          <Box className="w-6 h-6 text-gray-600" />
+                        <div className="w-12 h-12 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
+                          <Box className="w-5 h-5 text-gray-400" />
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">
-                        {item.design} {item.panelType} Panel
+
+                    {/* Design */}
+                    <td className="px-5 py-4">
+                      <div className="font-semibold text-gray-900">
+                        {item.design}
                       </div>
-                      <div className="text-gray-500 text-xs mt-0.5">
-                        Updated {item.lastUpdated}
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        {item.panelType}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">{item.panelId}</td>
-                    <td className="px-6 py-4 text-gray-600">
-                      <span className="px-2.5 py-1 rounded-md bg-white border border-gray-200 text-xs text-[#E8973A]">
-                        {item.panelType}
+
+                    {/* Color */}
+                    <td className="px-5 py-4 text-gray-600">
+                      {item.color || <span className="text-gray-300">—</span>}
+                    </td>
+
+                    {/* Panel ID */}
+                    <td className="px-5 py-4">
+                      <span className="font-mono text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-md">
+                        {item.panelId}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      <div className="flex flex-col gap-1">
-                        <span className="px-2.5 py-1 rounded-md bg-white border border-gray-200 text-xs w-fit">
-                          {item.design} ({item.color})
-                        </span>
-                        {item.size && (
-                          <span className="text-xs text-gray-500">
-                            {item.size}
-                          </span>
-                        )}
-                      </div>
+
+                    {/* Size / Specifications */}
+                    <td className="px-5 py-4 text-gray-600">
+                      {item.size || <span className="text-gray-300">—</span>}
                     </td>
-                    <td className="px-6 py-4">
+
+                    {/* Qty */}
+                    <td className="px-5 py-4 text-right font-semibold text-gray-900">
+                      {item.quantity.toLocaleString()}
+                    </td>
+
+                    {/* Total Effective Area */}
+                    <td className="px-5 py-4 text-right">
+                      {(item as any).totalEffectiveArea != null ? (
+                        <span className="font-semibold text-gray-900">
+                          {Number(
+                            (item as any).totalEffectiveArea,
+                          ).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 4,
+                          })}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-5 py-4">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
                           item.status === "In Stock"
-                            ? "bg-gray-900/5 text-gray-600 border-gray-300/20"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                             : item.status === "Low Stock"
-                              ? "bg-gray-900/5 text-gray-600 border-gray-300/20"
-                              : "bg-gray-900/5 text-gray-600 border-gray-300/20"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-red-50 text-red-600 border-red-200"
                         }`}
                       >
                         {item.status === "In Stock" && (
                           <CheckCircle2 className="w-3.5 h-3.5" />
                         )}
-                        {item.status === "Low Stock" && (
-                          <AlertCircle className="w-3.5 h-3.5" />
-                        )}
-                        {item.status === "Out of Stock" && (
+                        {item.status !== "In Stock" && (
                           <AlertCircle className="w-3.5 h-3.5" />
                         )}
                         {item.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right font-medium">
-                      {item.quantity}
-                    </td>
-                    <td className="px-6 py-4 text-right text-gray-600">
-                      {formatLKR(item.price)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-3">
+
+                    {/* Actions */}
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => handleEditPanelClick(item)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-[#E8973A] bg-white/50 hover:bg-[#E8973A]/10 border border-gray-300/50 hover:border-[#E8973A]/30 rounded-lg transition-all"
+                          className="p-1.5 text-gray-400 hover:text-[#E8973A] hover:bg-[#E8973A]/10 rounded-md transition-colors"
                           title="Edit Panel"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeletePanel(item)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-red-400 bg-white/50 hover:bg-red-500/10 border border-gray-300/50 hover:border-red-500/30 rounded-lg transition-all"
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                           title="Delete Panel"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
                   </tr>
                 ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
