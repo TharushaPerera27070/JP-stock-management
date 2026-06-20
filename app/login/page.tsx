@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LockKeyhole, Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 const VALID_EMAIL = "japangedara01@gmail.com";
 const VALID_PASSWORD = "bawanthi@2025";
@@ -23,29 +25,37 @@ export default function LoginPage() {
     setIsSubmitting(true);
     setError("");
 
-    const isValid =
-      email.trim().toLowerCase() === VALID_EMAIL && password === VALID_PASSWORD;
+    try {
+      const emailTrimmed = email.trim();
+      await signInWithEmailAndPassword(auth, emailTrimmed, password);
 
-    if (!isValid) {
-      setError("Invalid email or password.");
+      login({
+        id: "admin-access",
+        email: emailTrimmed,
+        name: "JP Stock Admin",
+        companySettings: {
+          name: "JP Stock Management",
+          address: "",
+          phone: "",
+          email: emailTrimmed,
+          website: "",
+        },
+      });
+
+      router.replace("/");
+    } catch (err: any) {
+      console.error("Firebase auth login error:", err);
+      if (
+        err.code === "auth/invalid-credential" ||
+        err.code === "auth/user-not-found" ||
+        err.code === "auth/wrong-password"
+      ) {
+        setError("Invalid email or password.");
+      } else {
+        setError(err.message || "Failed to authenticate with Firebase.");
+      }
       setIsSubmitting(false);
-      return;
     }
-
-    login({
-      id: "admin-access",
-      email: VALID_EMAIL,
-      name: "JP Stock Admin",
-      companySettings: {
-        name: "JP Stock Management",
-        address: "",
-        phone: "",
-        email: VALID_EMAIL,
-        website: "",
-      },
-    });
-
-    router.replace("/");
   };
 
   return (
