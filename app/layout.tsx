@@ -1,9 +1,15 @@
+"use client";
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { DialogProvider } from "./components/Dialog";
 import CloudSettingsInitializer from "./components/CloudSettingsInitializer";
 import AuthGate from "./components/AuthGate";
+import { useEffect } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useAuthStore } from "@/lib/store";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,10 +21,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "JG Portal",
-  description: "Simple, powerful inventory management platform",
-};
+// Separate client component to handle Firebase Auth sync
+function FirebaseAuthSync() {
+  const logout = useAuthStore((state) => state.logout);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      if (!firebaseUser) {
+        // Firebase says no active session — clear Zustand store too
+        logout();
+      }
+    });
+    return () => unsub();
+  }, [logout]);
+
+  return null;
+}
 
 export default function RootLayout({
   children,
@@ -32,6 +50,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <DialogProvider>
+          <FirebaseAuthSync />
           <AuthGate>
             <CloudSettingsInitializer />
             {children}

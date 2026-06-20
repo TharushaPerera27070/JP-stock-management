@@ -55,6 +55,9 @@ export default function InventoryDashboard() {
   const { confirm, toast } = useDialog();
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const user = useAuthStore((state) => state.user);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
+
   const [activeTab, setActiveTab] = useState("dashboard");
   const [activeSubTab, setActiveSubTab] = useState<
     "invoices" | "quotations" | "receipts"
@@ -99,17 +102,13 @@ export default function InventoryDashboard() {
   const [receipts, setReceipts] = useState<any[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
 
+  // Guard: only fetch once Zustand has rehydrated AND a user is logged in
   useEffect(() => {
+    if (!hasHydrated || !user) return;
+
     const fetchStoredData = async () => {
       try {
-        const [
-          firestoreOrders,
-          storedInvoices,
-          storedQuotations,
-          storedReceipts,
-          panels,
-          firestoreCustomers,
-        ] = await Promise.all([
+        const results = await Promise.allSettled([
           getOrdersFromFirestore(),
           getInvoicesFromFirestore(),
           getQuotationsFromFirestore(),
@@ -117,18 +116,46 @@ export default function InventoryDashboard() {
           getPanelsFromFirestore(),
           getCustomersFromFirestore(),
         ]);
-        setOrders((firestoreOrders as OrderData[]) || []);
-        setInvoices(storedInvoices || []);
-        setQuotations(storedQuotations || []);
-        setReceipts(storedReceipts || []);
-        setItems((panels as InventoryItem[]) || []);
-        setCustomers((firestoreCustomers as Customer[]) || []);
+
+        const labels = [
+          "orders",
+          "invoices",
+          "quotations",
+          "receipts",
+          "panels",
+          "customers",
+        ];
+
+        results.forEach((result, i) => {
+          if (result.status === "rejected") {
+            console.error(`❌ FAILED: ${labels[i]}`, result.reason);
+          } else {
+            console.log(
+              `✅ OK: ${labels[i]}`,
+              result.value?.length ?? 0,
+              "records",
+            );
+          }
+        });
+
+        const [orders, invoices, quotations, receipts, panels, customers] =
+          results;
+        if (orders.status === "fulfilled")
+          setOrders((orders.value as OrderData[]) || []);
+        if (invoices.status === "fulfilled") setInvoices(invoices.value || []);
+        if (quotations.status === "fulfilled")
+          setQuotations(quotations.value || []);
+        if (receipts.status === "fulfilled") setReceipts(receipts.value || []);
+        if (panels.status === "fulfilled")
+          setItems((panels.value as InventoryItem[]) || []);
+        if (customers.status === "fulfilled")
+          setCustomers((customers.value as Customer[]) || []);
       } catch (e) {
         console.error("Error fetching data from Firestore:", e);
       }
     };
     fetchStoredData();
-  }, [activeTab]);
+  }, [activeTab, hasHydrated, user]);
 
   const totalValue = items.reduce(
     (acc, item) => acc + item.price * item.quantity,

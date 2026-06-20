@@ -15,6 +15,7 @@ import {
   getPettyCashEntriesFromFirestore,
   savePettyCashEntryToFirestore,
 } from "@/lib/documentStorage";
+import { useAuthStore } from "@/lib/store";
 
 interface DashboardProps {
   thisMonthRevenue: number;
@@ -45,6 +46,9 @@ export default function Dashboard({
   setActiveTab,
   formatLKR,
 }: DashboardProps) {
+  const user = useAuthStore((state) => state.user);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
+
   const [selectedWindow, setSelectedWindow] = useState<"24h" | "7d" | "30d">(
     "30d",
   );
@@ -100,7 +104,10 @@ export default function Dashboard({
     windowOptions.find((o) => o.key === selectedWindow) || windowOptions[2];
   const cutoffTime = Date.now() - selectedWindowInfo.durationMs;
 
+  // Guard: only fetch petty cash once Zustand has rehydrated AND a user is logged in
   useEffect(() => {
+    if (!hasHydrated || !user) return;
+
     const loadPettyCashEntries = async () => {
       try {
         const entries = await getPettyCashEntriesFromFirestore();
@@ -111,7 +118,7 @@ export default function Dashboard({
       }
     };
     loadPettyCashEntries();
-  }, []);
+  }, [hasHydrated, user]);
 
   const filteredRevenue = useMemo(() => {
     return orders.reduce((total, order) => {
@@ -124,8 +131,6 @@ export default function Dashboard({
   const todayDateKey = new Date().toISOString().split("T")[0];
 
   const dailyPettyCashAmount = useMemo(() => {
-    // Accept entries that have explicit `dateKey` matching today,
-    // or fall back to checking the `createdAt` timestamp's date.
     return pettyCashEntries
       .filter((e) => {
         if (!e) return false;
