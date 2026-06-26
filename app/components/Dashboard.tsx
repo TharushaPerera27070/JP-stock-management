@@ -261,7 +261,7 @@ export default function Dashboard({
         const timeB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
         return timeB - timeA;
       })
-      .slice(0, 5);
+      .slice(0, 4);
   }, [items]);
 
   return (
@@ -590,33 +590,31 @@ export default function Dashboard({
           </div>
           <div className="space-y-4">
             {lowStockPanels.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-gray-300/10 hover:bg-gray-900/5 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-900/10 flex items-center justify-center text-gray-600">
-                      <AlertCircle className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">
-                        {item.design} {item.panelType} Panel
-                      </h4>
-                      <p className="text-xs text-gray-500">
-                        ID: {item.panelId}
-                      </p>
-                    </div>
+              <div
+                key={item.id}
+                className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-gray-300/10 hover:bg-gray-900/5 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-gray-900/10 flex items-center justify-center text-gray-600">
+                    <AlertCircle className="w-5 h-5" />
                   </div>
-                  <div className="text-right flex flex-col items-end">
-                    <div className="font-bold text-gray-600">
-                      {item.quantity} Sqft
-                    </div>
-                    <span className="text-xs text-gray-500 mt-1">
-                      {item.status}
-                    </span>
+                  <div>
+                    <h4 className="font-medium text-gray-900">
+                      {item.design} {item.panelType} Panel
+                    </h4>
+                    <p className="text-xs text-gray-500">ID: {item.panelId}</p>
                   </div>
                 </div>
-              ))}
+                <div className="text-right flex flex-col items-end">
+                  <div className="font-bold text-gray-600">
+                    {item.quantity} Qty
+                  </div>
+                  <span className="text-xs text-gray-500 mt-1">
+                    {item.status}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
