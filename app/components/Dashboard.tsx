@@ -253,6 +253,17 @@ export default function Dashboard({
     return null;
   }, [latestInvoice, orders]);
 
+  const lowStockPanels = useMemo(() => {
+    return items
+      .filter((i) => i.status !== "In Stock")
+      .sort((a, b) => {
+        const timeA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+        const timeB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+        return timeB - timeA;
+      })
+      .slice(0, 5);
+  }, [items]);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -578,9 +589,7 @@ export default function Dashboard({
             </button>
           </div>
           <div className="space-y-4">
-            {items
-              .filter((i) => i.status !== "In Stock")
-              .map((item) => (
+            {lowStockPanels.map((item) => (
                 <div
                   key={item.id}
                   className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-gray-300/10 hover:bg-gray-900/5 transition-colors"
