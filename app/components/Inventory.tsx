@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Search,
   Plus,
@@ -8,6 +8,7 @@ import {
   Edit2,
   Trash2,
   Box,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { InventoryItem } from "../types";
@@ -33,6 +34,8 @@ export default function Inventory({
   handleDeletePanel,
   formatLKR,
 }: InventoryProps) {
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   const filtered = items.filter(
     (i) =>
       `${i.design} ${i.panelType} Panel`
@@ -129,7 +132,12 @@ export default function Inventory({
                     {/* Photo */}
                     <td className="px-5 py-4">
                       {item.imageUrl?.trim() ? (
-                        <div className="w-12 h-12 rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(item.imageUrl!.trim())}
+                          className="w-12 h-12 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 cursor-zoom-in hover:opacity-80 hover:ring-2 hover:ring-[#E8973A]/50 transition-all"
+                          title="Click to enlarge"
+                        >
                           <Image
                             src={item.imageUrl.trim()}
                             alt={item.design}
@@ -138,7 +146,7 @@ export default function Inventory({
                             className="w-full h-full object-cover"
                             unoptimized
                           />
-                        </div>
+                        </button>
                       ) : (
                         <div className="w-12 h-12 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
                           <Box className="w-5 h-5 text-gray-400" />
@@ -241,6 +249,35 @@ export default function Inventory({
           )}
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button
+            onClick={() => setPreviewImage(null)}
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            title="Close"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <div
+            className="relative max-w-3xl max-h-[85vh] w-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={previewImage}
+              alt="Panel preview"
+              width={800}
+              height={800}
+              unoptimized
+              className="max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
