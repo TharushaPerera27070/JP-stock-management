@@ -11,7 +11,7 @@ import {
 } from "@/lib/documentStorage";
 import { useSettingsStore } from "@/lib/settingsStore";
 import { useDialog } from "./Dialog";
-import { getOrdersFromFirestore } from "@/lib/firestoreService";
+import { getOrdersFromFirestore, deductInventoryForOrder, restoreInventoryForOrder } from "@/lib/firestoreService";
 import CustomerSearchPicker from "./CustomerSearchPicker";
 import type { ReceiptDraft } from "../types";
 
@@ -24,6 +24,7 @@ interface LineItem {
   unit?: string;
   groupTitle?: string;
   discount?: number; // Represented as percentage (e.g. 10 for 10% discount)
+  inventoryItemId?: string; // Firestore doc ID of the selected inventory panel
 }
 
 interface AddOrderProps {
@@ -344,7 +345,21 @@ function OrderEditor({
 
       await saveInvoiceToFirestore(invoiceData);
 
-      // 2. Prepare Order Data
+      // 2. If editing, restore old inventory quantities first
+      if (editId) {
+        const existingOrders = await getOrdersFromFirestore();
+        const oldOrder = existingOrders.find((o: any) => o.id === editId);
+        if (oldOrder?.lineItems?.length) {
+          await restoreInventoryForOrder(
+            oldOrder.lineItems.map((li: any) => ({
+              inventoryItemId: li.inventoryId,
+              quantity: li.quantity,
+            }))
+          );
+        }
+      }
+
+      // 3. Prepare Order Data
       const totalQty = items.reduce((acc, item) => acc + item.quantity, 0);
       const finalOrderData: OrderData = {
         id: orderId,
@@ -355,7 +370,7 @@ function OrderEditor({
         total: total,
         status: status,
         lineItems: items.map((item) => ({
-          inventoryId: item.category || "custom",
+          inventoryId: item.inventoryItemId || item.category || "custom",
           name: item.description || item.groupTitle || "Item",
           quantity: item.quantity,
           price: item.unitPrice,
@@ -368,6 +383,14 @@ function OrderEditor({
 
       const shouldStayOnPage = showPromptAfterSave && !editId;
       await onSave(finalOrderData, { stayOnPage: shouldStayOnPage });
+
+      // 4. Deduct inventory quantities for panel items
+      await deductInventoryForOrder(
+        items.map((item) => ({
+          inventoryItemId: item.inventoryItemId,
+          quantity: item.quantity,
+        }))
+      );
 
       if (showPromptAfterSave && !editId) {
         setShowPreview(false);
@@ -776,6 +799,7 @@ function OrderEditor({
                                           description: "",
                                           unitPrice: defaultPanel.price || 0,
                                           discount: 0,
+                                          inventoryItemId: defaultPanel.id,
                                         });
                                       } else {
                                         updateItem(index, {
@@ -786,6 +810,7 @@ function OrderEditor({
                                           description: "",
                                           unitPrice: 0,
                                           discount: 0,
+                                          inventoryItemId: undefined,
                                         });
                                       }
                                     }
@@ -832,6 +857,7 @@ function OrderEditor({
                                           size: selectedPanel.size || "",
                                           description: "",
                                           unitPrice: selectedPanel.price || 0,
+                                          inventoryItemId: selectedPanel.id,
                                         });
                                       } else {
                                         updateItem(index, "groupTitle", val);

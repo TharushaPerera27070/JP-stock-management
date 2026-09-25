@@ -49,6 +49,7 @@ import {
   savePanelToFirestore,
   deletePanelFromFirestore,
   getCustomersFromFirestore,
+  restoreInventoryForOrder,
 } from "@/lib/firestoreService";
 
 export default function InventoryDashboard() {
@@ -257,6 +258,20 @@ export default function InventoryDashboard() {
     });
     if (ok) {
       try {
+        // Restore inventory quantities before deleting
+        const orderToDelete = orders.find((o) => o.id === orderId);
+        if (orderToDelete?.lineItems?.length) {
+          await restoreInventoryForOrder(
+            orderToDelete.lineItems.map((li) => ({
+              inventoryItemId: li.inventoryId,
+              quantity: li.quantity,
+            }))
+          );
+          // Refresh local inventory state
+          const updatedPanels = await getPanelsFromFirestore();
+          setItems((updatedPanels as InventoryItem[]) || []);
+        }
+
         await deleteOrderFromFirestore(orderId);
         setOrders((prev) => prev.filter((o) => o.id !== orderId));
         toast({ message: "Order deleted successfully.", type: "delete" });
@@ -785,6 +800,10 @@ export default function InventoryDashboard() {
                       type: "success",
                     });
                   }
+                  // Refresh inventory to reflect deducted quantities
+                  const updatedPanels = await getPanelsFromFirestore();
+                  setItems((updatedPanels as InventoryItem[]) || []);
+
                   if (!options?.stayOnPage) {
                     setActiveTab("orders");
                     setEditDocId(undefined);

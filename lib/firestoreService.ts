@@ -276,6 +276,100 @@ export async function deletePanelFromFirestore(id: string): Promise<void> {
   await deleteDoc(doc(db, "inventory", id));
 }
 
+/**
+ * Deduct inventory quantities when an order is created.
+ * Each entry must have `inventoryItemId` (the Firestore doc ID) and `quantity`.
+ * Uses a writeBatch so all updates are atomic.
+ */
+export async function deductInventoryForOrder(
+  lineItems: { inventoryItemId?: string; quantity: number }[]
+): Promise<void> {
+  const panelItems = lineItems.filter(
+    (item) => item.inventoryItemId && item.inventoryItemId !== "custom" &&
+              item.inventoryItemId !== "transport" &&
+              item.inventoryItemId !== "wall" &&
+              item.inventoryItemId !== "ceiling" &&
+              item.inventoryItemId !== "roofing"
+  );
+  if (panelItems.length === 0) return;
+
+  const batch = writeBatch(db);
+
+  for (const item of panelItems) {
+    const panelRef = doc(db, "inventory", item.inventoryItemId!);
+    const snap = await getDoc(panelRef);
+    if (!snap.exists()) continue;
+
+    const data = snap.data();
+    const currentQty = Number(data.quantity) || 0;
+    const newQty = Math.max(0, currentQty - item.quantity);
+
+    const status: string =
+      newQty <= 0 ? "Out of Stock" : newQty <= 5 ? "Low Stock" : "In Stock";
+
+    const updates: any = {
+      quantity: newQty,
+      status,
+      lastUpdated: tsNow(),
+    };
+
+    // Recalculate totalEffectiveArea if effectiveArea is set
+    if (data.effectiveArea) {
+      updates.totalEffectiveArea = (Number(data.effectiveArea) || 0) * newQty;
+    }
+
+    batch.update(panelRef, updates);
+  }
+
+  await batch.commit();
+}
+
+/**
+ * Restore inventory quantities (reverse of deduction).
+ * Used when an order is deleted or before re-deducting on edit.
+ */
+export async function restoreInventoryForOrder(
+  lineItems: { inventoryItemId?: string; quantity: number }[]
+): Promise<void> {
+  const panelItems = lineItems.filter(
+    (item) => item.inventoryItemId && item.inventoryItemId !== "custom" &&
+              item.inventoryItemId !== "transport" &&
+              item.inventoryItemId !== "wall" &&
+              item.inventoryItemId !== "ceiling" &&
+              item.inventoryItemId !== "roofing"
+  );
+  if (panelItems.length === 0) return;
+
+  const batch = writeBatch(db);
+
+  for (const item of panelItems) {
+    const panelRef = doc(db, "inventory", item.inventoryItemId!);
+    const snap = await getDoc(panelRef);
+    if (!snap.exists()) continue;
+
+    const data = snap.data();
+    const currentQty = Number(data.quantity) || 0;
+    const newQty = currentQty + item.quantity;
+
+    const status: string =
+      newQty <= 0 ? "Out of Stock" : newQty <= 5 ? "Low Stock" : "In Stock";
+
+    const updates: any = {
+      quantity: newQty,
+      status,
+      lastUpdated: tsNow(),
+    };
+
+    if (data.effectiveArea) {
+      updates.totalEffectiveArea = (Number(data.effectiveArea) || 0) * newQty;
+    }
+
+    batch.update(panelRef, updates);
+  }
+
+  await batch.commit();
+}
+
 // ─── CUSTOMERS ────────────────────────────────────────────────────────────────
 
 function normalizeCustomerRecord(data: any) {
