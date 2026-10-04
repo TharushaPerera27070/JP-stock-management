@@ -40,6 +40,7 @@ interface DocumentsProps {
   onEdit?: (type: "invoice" | "quotation" | "receipt", id: string) => void;
   onView?: (type: "invoice" | "quotation" | "receipt", id: string) => void;
   onCreate?: (type: "invoice" | "quotation" | "receipt") => void;
+  onConvertToInvoice?: (quotationId: string) => void;
 }
 
 export default function Documents({
@@ -48,6 +49,7 @@ export default function Documents({
   onEdit,
   onView,
   onCreate,
+  onConvertToInvoice,
 }: DocumentsProps) {
   const { confirm, toast } = useDialog();
   const [searchQuery, setSearchQuery] = useState("");
@@ -349,6 +351,26 @@ export default function Documents({
                             >
                               <Edit2 className="w-4 h-4" />
                             </Link>
+                          )}
+
+                          {type === "quotation" && (
+                            onConvertToInvoice ? (
+                              <button
+                                onClick={() => onConvertToInvoice(doc.id)}
+                                title="Convert to Invoice"
+                                className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors cursor-pointer"
+                              >
+                                <Receipt className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <Link
+                                href={`/invoice?fromQuotationId=${doc.id}`}
+                                title="Convert to Invoice"
+                                className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                              >
+                                <Receipt className="w-4 h-4" />
+                              </Link>
+                            )
                           )}
 
                           <button

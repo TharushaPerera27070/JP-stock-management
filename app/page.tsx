@@ -65,6 +65,7 @@ export default function InventoryDashboard() {
   >("invoices");
   const [editDocId, setEditDocId] = useState<string | undefined>(undefined);
   const [isViewOnly, setIsViewOnly] = useState<boolean>(false);
+  const [convertQuotationId, setConvertQuotationId] = useState<string | undefined>(undefined);
   const [pendingReceiptDraft, setPendingReceiptDraft] =
     useState<ReceiptDraft | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -625,13 +626,26 @@ export default function InventoryDashboard() {
               }}
               onCreate={(type) => {
                 setEditDocId(undefined);
+                setConvertQuotationId(undefined);
                 setIsViewOnly(false);
                 setActiveTab(`create-${type}`);
+              }}
+              onConvertToInvoice={(quotationId) => {
+                setConvertQuotationId(quotationId);
+                setEditDocId(undefined);
+                setIsViewOnly(false);
+                setActiveTab("create-invoice");
               }}
             />
           )}
           {activeTab === "create-invoice" && (
-            <InvoicePage onBack={() => setActiveTab("documents")} />
+            <InvoicePage
+              fromQuotationId={convertQuotationId}
+              onBack={() => {
+                setConvertQuotationId(undefined);
+                setActiveTab("documents");
+              }}
+            />
           )}
           {activeTab === "create-quotation" && (
             <QuotationPage onBack={() => setActiveTab("documents")} />

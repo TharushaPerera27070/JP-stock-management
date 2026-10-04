@@ -31,12 +31,14 @@ interface LineItem {
 
 interface DocumentEditorProps {
   editId?: string;
+  fromQuotationId?: string;
   isViewOnly?: boolean;
   onBack?: () => void;
 }
 
 export default function InvoicePage({
   editId,
+  fromQuotationId,
   isViewOnly,
   onBack,
 }: DocumentEditorProps) {
@@ -50,6 +52,7 @@ export default function InvoicePage({
     >
       <InvoiceEditor
         propEditId={editId}
+        propFromQuotationId={fromQuotationId}
         propIsViewOnly={isViewOnly}
         onBack={onBack}
       />
@@ -59,15 +62,18 @@ export default function InvoicePage({
 
 function InvoiceEditor({
   propEditId,
+  propFromQuotationId,
   propIsViewOnly,
   onBack,
 }: {
   propEditId?: string;
+  propFromQuotationId?: string;
   propIsViewOnly?: boolean;
   onBack?: () => void;
 }) {
   const searchParams = useSearchParams();
   const editId = propEditId || searchParams.get("id");
+  const fromQuotationId = propFromQuotationId || searchParams.get("fromQuotationId");
 
   const settings = useSettingsStore();
   const LINE_ITEM_PRESETS = settings.presets;
@@ -151,6 +157,8 @@ function InvoiceEditor({
   useEffect(() => {
     if (editId) {
       loadExistingDocument(editId);
+    } else if (fromQuotationId) {
+      loadFromQuotation(fromQuotationId);
     } else {
       // Generate next available sequential number automatically for new documents
       const fetchNextNum = async () => {
@@ -159,7 +167,7 @@ function InvoiceEditor({
       };
       fetchNextNum();
     }
-  }, [editId]);
+  }, [editId, fromQuotationId]);
 
   useEffect(() => {
     const loadCustomers = async () => {
@@ -244,6 +252,56 @@ function InvoiceEditor({
       }
     } catch (error) {
       console.error("Error loading document:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadFromQuotation = async (id: string) => {
+    setIsLoading(true);
+    try {
+      const doc: any = await getDocumentFromFirestore("quotation", id);
+
+      if (doc) {
+        setTitle("INVOICE");
+        setInvoiceNo(""); // Empty invoice number as requested
+        setClientName(doc.clientName || "");
+        setClientContactNumber(doc.clientContactNumber || "");
+        setClientAddress(doc.clientAddress || "");
+        setIssueDate(new Date().toISOString().split("T")[0]);
+        setDueDate(
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0],
+        );
+        setPricingMode(doc.pricingMode || "simple");
+        setNotes(doc.notes || "");
+        setPreparedBy(doc.preparedBy || "");
+        setOrderType(doc.orderType || "with_construction");
+        setEnableDiscounts(doc.enableDiscounts || false);
+        setInvoiceType("normal");
+        if (doc.items && doc.items.length > 0) {
+          const legacyDiscount = normalizeDiscount(doc.customerDiscount || 0);
+          const hasItemDiscount = doc.items.some(
+            (item: LineItem) => normalizeDiscount(item.discount) > 0,
+          );
+
+          if (!hasItemDiscount && legacyDiscount > 0) {
+            setItems(
+              doc.items.map((item: LineItem) => ({
+                ...item,
+                discount: legacyDiscount,
+              })),
+            );
+            setEnableDiscounts(true);
+          } else {
+            setItems(doc.items);
+          }
+        }
+        setDocumentId(null); // Ensure it creates a new invoice
+      }
+    } catch (error) {
+      console.error("Error loading quotation:", error);
     } finally {
       setIsLoading(false);
     }
