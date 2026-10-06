@@ -183,6 +183,10 @@ export async function getPettyCashEntriesFromFirestore(): Promise<any[]> {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+export async function deletePettyCashEntryFromFirestore(id: string): Promise<void> {
+  await deleteDoc(doc(db, "pettyCashEntries", id));
+}
+
 // ─── GENERIC DOCUMENT HELPERS (used by Documents.tsx) ────────────────────────
 
 export async function getDocumentFromFirestore(

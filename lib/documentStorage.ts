@@ -27,6 +27,7 @@ export {
 
   savePettyCashEntryToFirestore,
   getPettyCashEntriesFromFirestore,
+  deletePettyCashEntryFromFirestore,
 
   getDocumentFromFirestore,
   deleteDocumentFromFirestore,

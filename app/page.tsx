@@ -14,6 +14,7 @@ import {
   Bell,
   FileText,
   ChevronRight,
+  Wallet,
 } from "lucide-react";
 import { useDialog } from "./components/Dialog";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,7 @@ import Orders from "./components/Orders";
 import Customers from "./components/Customers";
 import Reports from "./components/Reports";
 import Documents from "./components/Documents";
+import PettyCash from "./components/PettyCash";
 import InvoicePage from "./invoice/page";
 import QuotationPage from "./quotation/page";
 import ReceiptPage from "./receipt/page";
@@ -321,6 +323,8 @@ export default function InventoryDashboard() {
         ];
       case "reports":
         return [{ label: "Reports" }];
+      case "petty-cash":
+        return [{ label: "Petty Cash" }];
       case "settings":
         return [{ label: "Settings" }];
       case "documents":
@@ -448,6 +452,7 @@ export default function InventoryDashboard() {
               { id: "orders", label: "Orders", icon: ShoppingCart },
               { id: "customers", label: "Customers", icon: Users },
               { id: "documents", label: "Documents", icon: FileText },
+              { id: "petty-cash", label: "Petty Cash", icon: Wallet },
               { id: "reports", label: "Reports", icon: BarChart3 },
             ].map((item) => (
               <button
@@ -610,6 +615,7 @@ export default function InventoryDashboard() {
             <Customers customers={customers} setActiveTab={setActiveTab} />
           )}
           {activeTab === "reports" && <Reports />}
+          {activeTab === "petty-cash" && <PettyCash />}
           {activeTab === "documents" && (
             <Documents
               activeSubTab={activeSubTab}
