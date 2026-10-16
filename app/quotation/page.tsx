@@ -447,7 +447,11 @@ function QuotationEditor({
   };
 
   const handleExportPDF = async () => {
-    await exportToPDF("quotation-preview", `${quotationNo}.pdf`);
+    const customer = clientName?.trim();
+    const fileName = customer
+      ? `${quotationNo} - ${customer}.pdf`.replace(/[/\\?%*:|"<>]/g, "-")
+      : `${quotationNo}.pdf`.replace(/[/\\?%*:|"<>]/g, "-");
+    await exportToPDF("quotation-preview", fileName);
     if (!isViewMode) {
       await saveCurrentQuotation();
       if (onBack) onBack();

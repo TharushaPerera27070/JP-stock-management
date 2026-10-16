@@ -408,7 +408,11 @@ function OrderEditor({
   };
 
   const handleExportPDF = async () => {
-    await exportToPDF("invoice-preview", `${invoiceNo}.pdf`);
+    const customer = clientName?.trim();
+    const fileName = customer
+      ? `${invoiceNo} - ${customer}.pdf`.replace(/[/\\?%*:|"<>]/g, "-")
+      : `${invoiceNo}.pdf`.replace(/[/\\?%*:|"<>]/g, "-");
+    await exportToPDF("invoice-preview", fileName);
     await handleSave(true);
   };
 

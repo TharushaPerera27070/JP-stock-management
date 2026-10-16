@@ -211,7 +211,11 @@ function ReceiptEditor({
       const saved = await saveCurrentReceipt();
       if (!saved) return;
     }
-    await exportToPDF("receipt-preview", `${receiptNo}.pdf`);
+    const customer = receivedFrom?.trim();
+    const fileName = customer
+      ? `${receiptNo} - ${customer}.pdf`.replace(/[/\\?%*:|"<>]/g, "-")
+      : `${receiptNo}.pdf`.replace(/[/\\?%*:|"<>]/g, "-");
+    await exportToPDF("receipt-preview", fileName);
     if (!isViewMode && onBack) {
       onBack();
     }
