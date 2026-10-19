@@ -36,6 +36,13 @@ import { useAuthStore } from "@/lib/store";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ReportPeriod = "daily" | "weekly" | "monthly" | "yearly";
+type PreviewTab =
+  | "orders"
+  | "invoices"
+  | "quotations"
+  | "valuableClients"
+  | "newCustomers"
+  | "pettyCash";
 
 interface ReportData {
   orders: OrderData[];
@@ -1384,9 +1391,10 @@ export default function Reports() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [previewTab, setPreviewTab] = useState<
-    "orders" | "invoices" | "quotations" | "valuableClients" | "newCustomers" | "pettyCash"
-  >("invoices");
+  const [previewTab, setPreviewTab] = useState<PreviewTab>("invoices");
+  const [expandedTabs, setExpandedTabs] = useState<
+    Partial<Record<PreviewTab, boolean>>
+  >({});
 
   const [data, setData] = useState<ReportData>({
     orders: [],
@@ -1437,19 +1445,40 @@ export default function Reports() {
 
   // Filtered collections
   const filteredOrders = useMemo(
-    () => data.orders.filter((o) => isInRange(o, dateRange.start, dateRange.end)),
+    () =>
+      data.orders
+        .filter((o) => isInRange(o, dateRange.start, dateRange.end))
+        .sort(
+          (a, b) =>
+            (getRecordDate(b)?.getTime() ?? 0) -
+            (getRecordDate(a)?.getTime() ?? 0),
+        ),
     [data.orders, dateRange],
   );
   const filteredInvoices = useMemo(
     () =>
-      data.invoices.filter((i) => isInRange(i, dateRange.start, dateRange.end)),
+      data.invoices
+        .filter((i) => isInRange(i, dateRange.start, dateRange.end))
+        .sort(
+          (a, b) =>
+            (getRecordDate(b)?.getTime() ?? 0) -
+            (getRecordDate(a)?.getTime() ?? 0),
+        ),
     [data.invoices, dateRange],
   );
+  const visibleInvoices = expandedTabs.invoices
+    ? filteredInvoices
+    : filteredInvoices.slice(0, 10);
+
   const filteredQuotations = useMemo(
     () =>
-      data.quotations.filter((q) =>
-        isInRange(q, dateRange.start, dateRange.end),
-      ),
+      data.quotations
+        .filter((q) => isInRange(q, dateRange.start, dateRange.end))
+        .sort(
+          (a, b) =>
+            (getRecordDate(b)?.getTime() ?? 0) -
+            (getRecordDate(a)?.getTime() ?? 0),
+        ),
     [data.quotations, dateRange],
   );
   const filteredReceipts = useMemo(
@@ -1459,16 +1488,24 @@ export default function Reports() {
   );
   const filteredPettyCash = useMemo(
     () =>
-      data.pettyCash.filter((p) =>
-        isInRange(p, dateRange.start, dateRange.end),
-      ),
+      data.pettyCash
+        .filter((p) => isInRange(p, dateRange.start, dateRange.end))
+        .sort(
+          (a, b) =>
+            (getRecordDate(b)?.getTime() ?? 0) -
+            (getRecordDate(a)?.getTime() ?? 0),
+        ),
     [data.pettyCash, dateRange],
   );
   const newCustomersAdded = useMemo(
     () =>
-      data.customers.filter((c) =>
-        isInRange(c, dateRange.start, dateRange.end),
-      ),
+      data.customers
+        .filter((c) => isInRange(c, dateRange.start, dateRange.end))
+        .sort(
+          (a, b) =>
+            (getRecordDate(b)?.getTime() ?? 0) -
+            (getRecordDate(a)?.getTime() ?? 0),
+        ),
     [data.customers, dateRange],
   );
 
@@ -1501,6 +1538,47 @@ export default function Reports() {
       ),
     [filteredInvoices, filteredQuotations, filteredOrders, data.customers],
   );
+
+  const visibleQuotations = expandedTabs.quotations
+    ? filteredQuotations
+    : filteredQuotations.slice(0, 10);
+  const visibleOrders = expandedTabs.orders
+    ? filteredOrders
+    : filteredOrders.slice(0, 10);
+  const visibleValuableClients = expandedTabs.valuableClients
+    ? valuableClients
+    : valuableClients.slice(0, 10);
+  const visibleNewCustomers = expandedTabs.newCustomers
+    ? newCustomersAdded
+    : newCustomersAdded.slice(0, 10);
+  const visiblePettyCash = expandedTabs.pettyCash
+    ? filteredPettyCash
+    : filteredPettyCash.slice(0, 10);
+
+  const renderViewMore = (tab: PreviewTab, total: number) => {
+    if (total <= 10) return null;
+    const isExpanded = Boolean(expandedTabs[tab]);
+
+    return (
+      <div className="flex justify-center border-t border-gray-100 pt-4 mt-2">
+        <button
+          type="button"
+          onClick={() =>
+            setExpandedTabs((current) => ({
+              ...current,
+              [tab]: !current[tab],
+            }))
+          }
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-950"
+        >
+          {isExpanded ? "Show top 10" : `View ${total - 10} more`}
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
+    );
+  };
 
   const handleDownloadPDF = useCallback(async () => {
     setIsGenerating(true);
@@ -1542,9 +1620,13 @@ export default function Reports() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Business Reports</h2>
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#B96C24]">
+            <BarChart3 className="h-4 w-4" />
+            Performance overview
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-gray-950">Business Reports</h2>
           <p className="text-sm text-gray-500 mt-1">
             Detailed financial metrics, document ledger, valuable clients, and new customer analysis
           </p>
@@ -1552,7 +1634,7 @@ export default function Reports() {
         <button
           onClick={handleDownloadPDF}
           disabled={isGenerating}
-          className="flex items-center gap-2.5 px-6 py-3 bg-[#E8973A] text-white rounded-xl font-semibold text-sm hover:bg-[#d4832b] transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center gap-2.5 px-5 py-2.5 bg-gray-950 text-white rounded-lg font-semibold text-sm hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
         >
           {isGenerating ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -1564,16 +1646,19 @@ export default function Reports() {
       </div>
 
       {/* Period Filter & Date Picker */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1.5 shadow-2xs">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-2">
+        <div className="flex w-full items-center gap-1 sm:w-auto">
           {periodOptions.map((opt) => (
             <button
               key={opt.key}
-              onClick={() => setPeriod(opt.key)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+              onClick={() => {
+                setPeriod(opt.key);
+                setExpandedTabs({});
+              }}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer sm:flex-none ${
                 period === opt.key
-                  ? "bg-[#E8973A] text-white shadow-xs"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-white text-gray-950 shadow-sm ring-1 ring-gray-200"
+                  : "text-gray-500 hover:bg-white/70 hover:text-gray-900"
               }`}
             >
               {opt.label}
@@ -1584,7 +1669,7 @@ export default function Reports() {
         <div className="relative">
           <button
             onClick={() => setShowDatePicker(!showDatePicker)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:border-[#E8973A]/40 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-400 transition-colors"
           >
             <Calendar className="w-4 h-4 text-gray-400" />
             {dateRange.label}
@@ -1600,6 +1685,7 @@ export default function Reports() {
                 value={customDate}
                 onChange={(e) => {
                   setCustomDate(e.target.value);
+                  setExpandedTabs({});
                   setShowDatePicker(false);
                 }}
                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E8973A]/50"
@@ -1612,11 +1698,11 @@ export default function Reports() {
       {/* Primary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {/* Invoices Billed */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col gap-2 relative overflow-hidden group min-h-28">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-[#E8973A]/10 rounded-full blur-2xl group-hover:bg-[#E8973A]/20 transition-all duration-500" />
+        <div className="p-5 rounded-2xl bg-white border border-gray-200 flex flex-col gap-3 relative overflow-hidden group min-h-32 shadow-sm hover:border-gray-300 transition-colors">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-[#E8973A]" />
           <div className="flex items-center justify-between relative z-10">
             <span className="text-gray-500 text-sm font-medium">Invoices Billed</span>
-            <div className="p-2 rounded-lg bg-[#E8973A]/20 text-[#E8973A]">
+            <div className="p-2 rounded-lg bg-gray-100 text-gray-700">
               <FileText className="w-4 h-4" />
             </div>
           </div>
@@ -1631,11 +1717,11 @@ export default function Reports() {
         </div>
 
         {/* Quotations Pipeline */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col gap-2 relative overflow-hidden group min-h-28">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all duration-500" />
+        <div className="p-5 rounded-2xl bg-white border border-gray-200 flex flex-col gap-3 relative overflow-hidden group min-h-32 shadow-sm hover:border-gray-300 transition-colors">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-[#E8973A]" />
           <div className="flex items-center justify-between relative z-10">
             <span className="text-gray-500 text-sm font-medium">Quotations Pipeline</span>
-            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-600">
+            <div className="p-2 rounded-lg bg-gray-100 text-gray-700">
               <Receipt className="w-4 h-4" />
             </div>
           </div>
@@ -1650,11 +1736,11 @@ export default function Reports() {
         </div>
 
         {/* Net Revenue */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col gap-2 relative overflow-hidden group min-h-28">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all duration-500" />
+        <div className="p-5 rounded-2xl bg-white border border-gray-200 flex flex-col gap-3 relative overflow-hidden group min-h-32 shadow-sm hover:border-gray-300 transition-colors">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-[#E8973A]" />
           <div className="flex items-center justify-between relative z-10">
             <span className="text-gray-500 text-sm font-medium">Net Revenue</span>
-            <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-600">
+            <div className="p-2 rounded-lg bg-gray-100 text-gray-700">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
@@ -1674,8 +1760,8 @@ export default function Reports() {
       {/* Secondary Metric Highlights */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* New Customers Added */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-200 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-600">
+        <div className="p-4 rounded-xl bg-white border border-gray-200 flex items-center gap-4 shadow-sm">
+          <div className="p-3 rounded-xl bg-[#E8973A]/10 text-[#B96C24]">
             <UserPlus className="w-5 h-5" />
           </div>
           <div>
@@ -1687,8 +1773,8 @@ export default function Reports() {
         </div>
 
         {/* Valuable Clients */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-200 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-600">
+        <div className="p-4 rounded-xl bg-white border border-gray-200 flex items-center gap-4 shadow-sm">
+          <div className="p-3 rounded-xl bg-[#E8973A]/10 text-[#B96C24]">
             <Award className="w-5 h-5" />
           </div>
           <div>
@@ -1700,8 +1786,8 @@ export default function Reports() {
         </div>
 
         {/* Petty Cash Expenses */}
-        <div className="p-4 rounded-2xl bg-white border border-gray-200 flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-red-500/10 text-red-500">
+        <div className="p-4 rounded-xl bg-white border border-gray-200 flex items-center gap-4 shadow-sm">
+          <div className="p-3 rounded-xl bg-[#E8973A]/10 text-[#B96C24]">
             <Wallet className="w-5 h-5" />
           </div>
           <div>
@@ -1714,9 +1800,9 @@ export default function Reports() {
       </div>
 
       {/* Interactive Data Preview Explorer */}
-      <div className="p-6 rounded-2xl bg-white border border-gray-200 shadow-xs">
+      <div className="p-4 sm:p-6 rounded-2xl bg-white border border-gray-200 shadow-sm">
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-gray-200 pb-4 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1 border-b border-gray-200 pb-4 overflow-x-auto scrollbar-none">
           {[
             { id: "invoices", label: `Invoices (${filteredInvoices.length})`, icon: FileText },
             { id: "quotations", label: `Quotations (${filteredQuotations.length})`, icon: Receipt },
@@ -1727,11 +1813,11 @@ export default function Reports() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setPreviewTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+              onClick={() => setPreviewTab(tab.id as PreviewTab)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
                 previewTab === tab.id
-                  ? "bg-[#E8973A] text-white shadow-xs"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                  ? "bg-gray-950 text-white shadow-sm"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -1765,7 +1851,7 @@ export default function Reports() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredInvoices.map((inv, idx) => {
+                    {visibleInvoices.map((inv, idx) => {
                       const d = getRecordDate(inv);
                       return (
                         <tr key={inv.id || idx} className="hover:bg-gray-50/50 transition-colors">
@@ -1800,6 +1886,7 @@ export default function Reports() {
                     </tr>
                   </tfoot>
                 </table>
+                {renderViewMore("invoices", filteredInvoices.length)}
               </div>
             ) : (
               <div className="text-center py-12 text-gray-500">
@@ -1817,7 +1904,7 @@ export default function Reports() {
               <h3 className="text-base font-bold text-gray-900">
                 Quotations Created — {dateRange.label}
               </h3>
-              <span className="text-sm font-bold text-blue-600">
+              <span className="text-sm font-bold text-[#B96C24]">
                 Total Pipeline: {formatLKR(totalQuotationValue)}
               </span>
             </div>
@@ -1835,12 +1922,12 @@ export default function Reports() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredQuotations.map((q, idx) => {
+                    {visibleQuotations.map((q, idx) => {
                       const d = getRecordDate(q);
                       return (
                         <tr key={q.id || idx} className="hover:bg-gray-50/50 transition-colors">
                           <td className="py-3 px-2 text-gray-500">{idx + 1}</td>
-                          <td className="py-3 px-2 font-mono font-semibold text-blue-600">
+                          <td className="py-3 px-2 font-mono font-semibold text-[#B96C24]">
                             {getDocNumber(q, "quotation")}
                           </td>
                           <td className="py-3 px-2 font-medium text-gray-900">
@@ -1864,12 +1951,13 @@ export default function Reports() {
                       <td colSpan={5} className="py-3 px-2 font-bold text-gray-900">
                         Total Quotations Value
                       </td>
-                      <td className="py-3 px-2 text-right font-bold text-blue-600 text-base">
+                      <td className="py-3 px-2 text-right font-bold text-[#B96C24] text-base">
                         {formatLKR(totalQuotationValue)}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
+                {renderViewMore("quotations", filteredQuotations.length)}
               </div>
             ) : (
               <div className="text-center py-12 text-gray-500">
@@ -1905,7 +1993,7 @@ export default function Reports() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredOrders.map((order, idx) => {
+                    {visibleOrders.map((order, idx) => {
                       const orderDate = getRecordDate(order);
                       return (
                         <tr key={order.id || idx} className="hover:bg-gray-50/50 transition-colors">
@@ -1921,10 +2009,10 @@ export default function Reports() {
                             <span
                               className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
                                 order.status === "Delivered"
-                                  ? "bg-emerald-100 text-emerald-700"
+                                  ? "bg-gray-900 text-white"
                                   : order.status === "Processing"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-amber-100 text-amber-700"
+                                    ? "bg-[#E8973A]/15 text-[#9A571D]"
+                                    : "bg-gray-100 text-gray-600"
                               }`}
                             >
                               {order.status}
@@ -1948,6 +2036,7 @@ export default function Reports() {
                     </tr>
                   </tfoot>
                 </table>
+                {renderViewMore("orders", filteredOrders.length)}
               </div>
             ) : (
               <div className="text-center py-12 text-gray-500">
@@ -1965,7 +2054,7 @@ export default function Reports() {
               <h3 className="text-base font-bold text-gray-900">
                 Most Valuable Clients in Selected Period
               </h3>
-              <span className="text-sm font-medium text-purple-600">
+              <span className="text-sm font-medium text-gray-500">
                 Ranked by Transaction & Billed Value
               </span>
             </div>
@@ -1984,7 +2073,7 @@ export default function Reports() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {valuableClients.map((vc, idx) => (
+                    {visibleValuableClients.map((vc, idx) => (
                       <tr key={vc.name + idx} className="hover:bg-gray-50/50 transition-colors">
                         <td className="py-3 px-2 text-gray-500 font-semibold">{idx + 1}</td>
                         <td className="py-3 px-2 font-bold text-gray-900 flex items-center gap-2">
@@ -2004,20 +2093,21 @@ export default function Reports() {
                         </td>
                         <td className="py-3 px-2 text-center font-medium">
                           {vc.quotationsCount > 0 ? (
-                            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                            <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-bold">
                               {vc.quotationsCount} ({formatLKR(vc.quotedTotal)})
                             </span>
                           ) : (
                             <span className="text-gray-400">—</span>
                           )}
                         </td>
-                        <td className="py-3 px-2 text-right font-bold text-purple-700 text-sm">
+                        <td className="py-3 px-2 text-right font-bold text-gray-900 text-sm">
                           {formatLKR(vc.grandTotal)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                {renderViewMore("valuableClients", valuableClients.length)}
               </div>
             ) : (
               <div className="text-center py-12 text-gray-500">
@@ -2035,7 +2125,7 @@ export default function Reports() {
               <h3 className="text-base font-bold text-gray-900">
                 Customers Enrolled in Selected Period ({newCustomersAdded.length})
               </h3>
-              <span className="text-sm font-medium text-emerald-600">
+              <span className="text-sm font-medium text-gray-500">
                 Only customers added within {dateRange.label}
               </span>
             </div>
@@ -2053,7 +2143,7 @@ export default function Reports() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {newCustomersAdded.map((c, idx) => {
+                    {visibleNewCustomers.map((c, idx) => {
                       const d = getRecordDate(c);
                       return (
                         <tr key={c.id || idx} className="hover:bg-gray-50/50 transition-colors">
@@ -2063,7 +2153,7 @@ export default function Reports() {
                             {c.contactNumber || c.phone || "—"}
                           </td>
                           <td className="py-3 px-2 text-gray-600">{c.company || c.address || "—"}</td>
-                          <td className="py-3 px-2 text-center font-bold text-emerald-600">
+                          <td className="py-3 px-2 text-center font-bold text-gray-700">
                             {c.discount ?? 0}%
                           </td>
                           <td className="py-3 px-2 text-right text-gray-600">
@@ -2074,6 +2164,7 @@ export default function Reports() {
                     })}
                   </tbody>
                 </table>
+                {renderViewMore("newCustomers", newCustomersAdded.length)}
               </div>
             ) : (
               <div className="text-center py-12 text-gray-500">
@@ -2091,7 +2182,7 @@ export default function Reports() {
               <h3 className="text-base font-bold text-gray-900">
                 Petty Cash Expenses — {dateRange.label}
               </h3>
-              <span className="text-sm font-bold text-red-600">
+              <span className="text-sm font-bold text-[#B96C24]">
                 Total Expenses: {formatLKR(totalPettyCash)}
               </span>
             </div>
@@ -2108,7 +2199,7 @@ export default function Reports() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredPettyCash.map((entry: any, idx: number) => (
+                    {visiblePettyCash.map((entry: any, idx: number) => (
                       <tr key={entry.id || idx} className="hover:bg-gray-50/50 transition-colors">
                         <td className="py-3 px-2 text-gray-500">{idx + 1}</td>
                         <td className="py-3 px-2 font-medium text-gray-900">{entry.description || "Untitled"}</td>
@@ -2129,12 +2220,13 @@ export default function Reports() {
                       <td colSpan={4} className="py-3 px-2 font-bold text-gray-900">
                         Total Operational Expenses
                       </td>
-                      <td className="py-3 px-2 text-right font-bold text-red-600 text-base">
+                      <td className="py-3 px-2 text-right font-bold text-[#B96C24] text-base">
                         {formatLKR(totalPettyCash)}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
+                {renderViewMore("pettyCash", filteredPettyCash.length)}
               </div>
             ) : (
               <div className="text-center py-12 text-gray-500">
@@ -2147,19 +2239,19 @@ export default function Reports() {
       </div>
 
       {/* Download CTA Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-[#E8973A] to-[#d4832b] text-white flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-6 rounded-2xl border border-gray-800 bg-gray-950 text-white flex flex-col sm:flex-row items-center justify-between gap-5 shadow-sm">
         <div>
           <h3 className="text-lg font-bold">
             Download Detailed {period.charAt(0).toUpperCase() + period.slice(1)} Report (PDF)
           </h3>
-          <p className="text-sm text-white/80 mt-1">
+          <p className="text-sm text-gray-400 mt-1">
             Includes full invoice ledger, quotation pipeline, valuable client breakdown, and new customers for {dateRange.label}.
           </p>
         </div>
         <button
           onClick={handleDownloadPDF}
           disabled={isGenerating}
-          className="flex items-center gap-2 px-6 py-3 bg-white text-[#E8973A] rounded-xl font-bold text-sm hover:bg-gray-100 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+          className="flex items-center gap-2 px-6 py-3 bg-[#E8973A] text-white rounded-lg font-bold text-sm hover:bg-[#D98732] transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
         >
           {isGenerating ? (
             <Loader2 className="w-4 h-4 animate-spin" />
