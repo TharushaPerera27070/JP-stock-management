@@ -18,6 +18,7 @@ import {
 } from "@/lib/firestoreService";
 import { useDialog } from "./Dialog";
 import { useAuthStore } from "@/lib/store";
+import { DataPageSkeleton } from "./LoadingSkeleton";
 
 interface PettyCashEntry {
   id: string;
@@ -207,11 +208,7 @@ export default function PettyCash() {
   };
 
   if (isLoading) {
-    return (
-      <div className="max-w-5xl mx-auto flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-[#E8973A] border-t-transparent rounded-full" />
-      </div>
-    );
+    return <DataPageSkeleton compact label="Loading petty cash records" />;
   }
 
   return (

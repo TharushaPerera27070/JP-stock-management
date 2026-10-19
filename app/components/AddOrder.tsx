@@ -14,6 +14,7 @@ import { useDialog } from "./Dialog";
 import { getOrdersFromFirestore, deductInventoryForOrder, restoreInventoryForOrder } from "@/lib/firestoreService";
 import CustomerSearchPicker from "./CustomerSearchPicker";
 import type { ReceiptDraft } from "../types";
+import { FormPageSkeleton } from "./LoadingSkeleton";
 
 interface LineItem {
   description: string;
@@ -49,11 +50,7 @@ export default function AddOrder({
 }: AddOrderProps) {
   return (
     <Suspense
-      fallback={
-        <div className="flex h-screen items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[#E8973A]" />
-        </div>
-      }
+      fallback={<FormPageSkeleton label="Loading order editor" />}
     >
       <OrderEditor
         onBack={onBack}
@@ -440,16 +437,7 @@ function OrderEditor({
   const totalDiscount = undiscountedSubtotal - total;
 
   if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 animate-spin text-[#E8973A]" />
-          <p className="text-gray-500 text-sm font-medium">
-            Creating Order & Invoice...
-          </p>
-        </div>
-      </div>
-    );
+    return <FormPageSkeleton label="Loading order details" />;
   }
 
   return (

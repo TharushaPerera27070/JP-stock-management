@@ -17,6 +17,7 @@ import {
   getReceiptsFromFirestore,
   deleteDocumentFromFirestore,
 } from "@/lib/documentStorage";
+import { TableSkeleton } from "./LoadingSkeleton";
 
 interface DocumentItem {
   id: string;
@@ -242,12 +243,7 @@ export default function Documents({
       {/* Main List Table */}
       <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-2xl">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <div className="w-8 h-8 rounded-full border-4 border-gray-200 border-t-[#E8973A] animate-spin" />
-            <p className="text-gray-500 text-sm font-medium">
-              Loading documents...
-            </p>
-          </div>
+          <TableSkeleton label={`Loading ${activeSubTab}`} />
         ) : filteredDocs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center px-6">
             <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mb-4 border border-gray-100 text-gray-400">

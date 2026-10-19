@@ -16,6 +16,7 @@ import {
   savePettyCashEntryToFirestore,
 } from "@/lib/documentStorage";
 import { useAuthStore } from "@/lib/store";
+import { DataPageSkeleton } from "./LoadingSkeleton";
 
 interface DashboardProps {
   thisMonthRevenue: number;
@@ -54,6 +55,7 @@ export default function Dashboard({
   );
   const [dailyPettyCashInput, setDailyPettyCashInput] = useState("");
   const [pettyCashEntries, setPettyCashEntries] = useState<any[]>([]);
+  const [isPettyCashLoading, setIsPettyCashLoading] = useState(true);
 
   const windowOptions: Array<{
     key: "24h" | "7d" | "30d";
@@ -115,6 +117,8 @@ export default function Dashboard({
         setPettyCashEntries(entries || []);
       } catch (error) {
         console.error("Failed to load petty cash entries:", error);
+      } finally {
+        setIsPettyCashLoading(false);
       }
     };
     loadPettyCashEntries();
@@ -263,6 +267,10 @@ export default function Dashboard({
       })
       .slice(0, 4);
   }, [items]);
+
+  if (isPettyCashLoading) {
+    return <DataPageSkeleton label="Loading dashboard metrics" />;
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">

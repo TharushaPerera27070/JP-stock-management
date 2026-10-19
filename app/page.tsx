@@ -30,6 +30,7 @@ import Customers from "./components/Customers";
 import Reports from "./components/Reports";
 import Documents from "./components/Documents";
 import PettyCash from "./components/PettyCash";
+import { DataPageSkeleton } from "./components/LoadingSkeleton";
 import InvoicePage from "./invoice/page";
 import QuotationPage from "./quotation/page";
 import ReceiptPage from "./receipt/page";
@@ -72,6 +73,7 @@ export default function InventoryDashboard() {
     useState<ReceiptDraft | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [editingPanel, setEditingPanel] = useState<InventoryItem | null>(null);
@@ -111,6 +113,7 @@ export default function InventoryDashboard() {
     if (!hasHydrated || !user) return;
 
     const fetchStoredData = async () => {
+      setIsDataLoading(true);
       try {
         const results = await Promise.allSettled([
           getOrdersFromFirestore(),
@@ -156,6 +159,8 @@ export default function InventoryDashboard() {
           setCustomers((customers.value as Customer[]) || []);
       } catch (e) {
         console.error("Error fetching data from Firestore:", e);
+      } finally {
+        setIsDataLoading(false);
       }
     };
     fetchStoredData();
@@ -572,6 +577,10 @@ export default function InventoryDashboard() {
 
         {/* Dashboard Content */}
         <div className="flex-1 overflow-auto p-4 md:p-8 z-10 relative scroll-smooth">
+          {isDataLoading ? (
+            <DataPageSkeleton label="Loading dashboard data" />
+          ) : (
+            <>
           {activeTab === "dashboard" && (
             <Dashboard
               thisMonthRevenue={thisMonthRevenue}
@@ -837,6 +846,8 @@ export default function InventoryDashboard() {
                 }
               }}
             />
+          )}
+            </>
           )}
         </div>
       </main>

@@ -12,11 +12,12 @@ import {
   upsertCustomerToFirestore,
 } from "@/lib/documentStorage";
 import Link from "next/link";
-import { ArrowLeft, Loader2, X } from "lucide-react";
+import { ArrowLeft, Loader2, Save, X } from "lucide-react";
 import { useSettingsStore } from "@/lib/settingsStore";
 import { useSearchParams } from "next/navigation";
 import { Customer } from "../types";
 import CustomerSearchPicker from "@/app/components/CustomerSearchPicker";
+import { FormPageSkeleton } from "@/app/components/LoadingSkeleton";
 
 interface LineItem {
   description: string;
@@ -44,11 +45,7 @@ export default function InvoicePage({
 }: DocumentEditorProps) {
   return (
     <Suspense
-      fallback={
-        <div className="flex h-screen items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[#E8973A]" />
-        </div>
-      }
+      fallback={<FormPageSkeleton label="Loading invoice editor" />}
     >
       <InvoiceEditor
         propEditId={editId}
@@ -118,6 +115,9 @@ function InvoiceEditor({
   const [enableDiscounts, setEnableDiscounts] = useState(false);
   const [documentId, setDocumentId] = useState<string | null>(editId);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCustomersLoading, setIsCustomersLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
   const [invoiceType, setInvoiceType] = useState<"normal" | "cash">("normal");
 
   const normalizeDiscount = (value: unknown) => {
@@ -176,6 +176,8 @@ function InvoiceEditor({
         setCustomers((storedCustomers as Customer[]) || []);
       } catch (error) {
         console.error("Error loading customers:", error);
+      } finally {
+        setIsCustomersLoading(false);
       }
     };
 
@@ -400,9 +402,19 @@ function InvoiceEditor({
           totalOrders: 0,
         });
       }
+      return true;
     } catch (err) {
       console.error("Save error:", err);
+      return false;
     }
+  };
+
+  const handleSaveOnly = async () => {
+    setIsSaving(true);
+    setSaveMessage("");
+    const saved = await saveCurrentInvoice();
+    setSaveMessage(saved ? "Saved" : "Save failed");
+    setIsSaving(false);
   };
 
   const handleExportPDF = async () => {
@@ -429,17 +441,8 @@ function InvoiceEditor({
   const undiscountedSubtotal = calculateUndiscountedSubtotal();
   const totalDiscount = undiscountedSubtotal - total;
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 animate-spin text-[#E8973A]" />
-          <p className="text-gray-500 text-sm font-medium">
-            Loading Document...
-          </p>
-        </div>
-      </div>
-    );
+  if (isLoading || isCustomersLoading) {
+    return <FormPageSkeleton label="Loading invoice" />;
   }
 
   return (
@@ -1101,6 +1104,20 @@ function InvoiceEditor({
                 </h3>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                {!isViewMode && (
+                  <button
+                    onClick={handleSaveOnly}
+                    disabled={isSaving}
+                    className="flex-1 sm:flex-initial px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-xl transition-colors font-bold text-xs uppercase tracking-wider shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    {isSaving ? "Saving" : saveMessage || "Save Changes"}
+                  </button>
+                )}
                 <button
                   onClick={handleExportPDF}
                   className="flex-1 sm:flex-initial px-5 py-2.5 bg-gray-900 hover:bg-black text-white rounded-xl transition-all duration-150 font-bold text-xs uppercase tracking-wider shadow-md active:scale-[0.98] flex items-center justify-center gap-2"

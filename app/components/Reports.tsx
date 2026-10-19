@@ -1608,11 +1608,86 @@ export default function Reports() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin w-8 h-8 border-4 border-[#E8973A] border-t-transparent rounded-full" />
-          <span className="text-sm text-gray-500">Loading business data...</span>
+      <div
+        className="max-w-7xl mx-auto space-y-6 animate-pulse"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading business reports"
+      >
+        <div className="flex flex-col gap-5 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="space-y-3">
+            <div className="h-3 w-36 rounded-full bg-gray-200" />
+            <div className="h-7 w-52 rounded-lg bg-gray-200" />
+            <div className="h-4 w-full max-w-md rounded bg-gray-100 sm:w-96" />
+          </div>
+          <div className="h-10 w-48 rounded-lg bg-gray-200" />
         </div>
+
+        <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex w-full gap-1 sm:w-auto">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="h-9 flex-1 rounded-lg bg-gray-200 sm:w-20" />
+            ))}
+          </div>
+          <div className="h-10 w-44 rounded-lg bg-gray-200" />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((item) => (
+            <div
+              key={item}
+              className="relative min-h-32 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+            >
+              <div className="absolute inset-x-0 top-0 h-0.5 bg-gray-200" />
+              <div className="flex items-center justify-between">
+                <div className="h-4 w-28 rounded bg-gray-200" />
+                <div className="h-8 w-8 rounded-lg bg-gray-100" />
+              </div>
+              <div className="mt-4 h-7 w-40 rounded bg-gray-200" />
+              <div className="mt-2 h-3 w-52 max-w-full rounded bg-gray-100" />
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {[0, 1, 2].map((item) => (
+            <div
+              key={item}
+              className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+            >
+              <div className="h-11 w-11 shrink-0 rounded-xl bg-gray-100" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-28 rounded bg-gray-200" />
+                <div className="h-3 w-full rounded bg-gray-100" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex gap-2 overflow-hidden border-b border-gray-200 pb-4">
+            {[0, 1, 2, 3, 4].map((item) => (
+              <div key={item} className="h-9 w-28 shrink-0 rounded-lg bg-gray-100" />
+            ))}
+          </div>
+          <div className="mt-5 flex items-center justify-between">
+            <div className="h-5 w-52 rounded bg-gray-200" />
+            <div className="h-4 w-32 rounded bg-gray-100" />
+          </div>
+          <div className="mt-5 space-y-3">
+            <div className="h-9 w-full rounded bg-gray-100" />
+            {[0, 1, 2, 3, 4].map((item) => (
+              <div key={item} className="grid grid-cols-6 gap-3 py-2">
+                <div className="h-4 rounded bg-gray-100" />
+                <div className="h-4 rounded bg-gray-200" />
+                <div className="col-span-2 h-4 rounded bg-gray-100" />
+                <div className="h-4 rounded bg-gray-100" />
+                <div className="h-4 rounded bg-gray-200" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <span className="sr-only">Loading business data...</span>
       </div>
     );
   }

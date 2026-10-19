@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FormPageSkeleton } from "@/app/components/LoadingSkeleton";
 import {
   ArrowLeft,
   Building,
@@ -135,16 +136,7 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
   };
 
   if (!mounted) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#E8973A] border-t-transparent" />
-          <p className="text-sm font-semibold text-gray-500">
-            Loading Configuration...
-          </p>
-        </div>
-      </div>
-    );
+    return <FormPageSkeleton label="Loading configuration" />;
   }
 
   if (!isAuthenticated) {

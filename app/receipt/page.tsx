@@ -10,6 +10,7 @@ import {
   getNextDocumentNumber,
 } from "@/lib/documentStorage";
 import Link from "next/link";
+import { FormPageSkeleton } from "@/app/components/LoadingSkeleton";
 import {
   ArrowLeft,
   Loader2,
@@ -21,6 +22,7 @@ import {
   FileText,
   Type,
   Hash,
+  Save,
   X,
 } from "lucide-react";
 import { useSettingsStore } from "@/lib/settingsStore";
@@ -43,11 +45,7 @@ export default function ReceiptPage({
 }: DocumentEditorProps) {
   return (
     <Suspense
-      fallback={
-        <div className="flex h-screen items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[#E8973A]" />
-        </div>
-      }
+      fallback={<FormPageSkeleton label="Loading receipt editor" />}
     >
       <ReceiptEditor
         propEditId={editId}
@@ -97,6 +95,8 @@ function ReceiptEditor({
   const [showPreview, setShowPreview] = useState(isViewMode);
   const [documentId, setDocumentId] = useState<string | null>(editId);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
@@ -221,6 +221,14 @@ function ReceiptEditor({
     }
   };
 
+  const handleSaveOnly = async () => {
+    setIsSaving(true);
+    setSaveMessage("");
+    const saved = await saveCurrentReceipt();
+    setSaveMessage(saved ? "Saved" : "Save failed");
+    setIsSaving(false);
+  };
+
   const handleDirectPrint = async () => {
     if (!isViewMode) {
       const saved = await saveCurrentReceipt();
@@ -233,16 +241,7 @@ function ReceiptEditor({
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 animate-spin text-[#E8973A]" />
-          <p className="text-gray-500 text-sm font-medium">
-            Loading Receipt...
-          </p>
-        </div>
-      </div>
-    );
+    return <FormPageSkeleton label="Loading receipt" />;
   }
 
   return (
@@ -454,6 +453,20 @@ function ReceiptEditor({
                 </h3>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                {!isViewMode && (
+                  <button
+                    onClick={handleSaveOnly}
+                    disabled={isSaving}
+                    className="flex-1 sm:flex-initial px-6 py-3 bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-xl transition-colors font-bold text-sm shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    {isSaving ? "Saving" : saveMessage || "Save Changes"}
+                  </button>
+                )}
                 <button
                   onClick={handleExportPDF}
                   className="flex-1 sm:flex-initial px-6 py-3 bg-gray-900 hover:bg-black text-white rounded-xl transition-all duration-150 font-bold text-sm uppercase tracking-wider shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
